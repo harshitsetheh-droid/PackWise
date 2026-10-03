@@ -1,0 +1,61 @@
+{
+  "dataset_source": "uploaded_dataset_20000_v5.csv",
+  "total_rows": 20000,
+  "trained_date": "2026-10-02",
+  "version": "PackWise ML v1.4 (Trained on 20k rows)",
+  "commodities_count": 89,
+  "materials_count": 13,
+  "material_distribution": {
+    "PET/PE Laminate": 4161,
+    "Metallized PET": 2424,
+    "LDPE": 2307,
+    "Aluminum Foil Laminate": 2077,
+    "EVOH Multilayer": 1848,
+    "HDPE": 1793,
+    "PP": 1341,
+    "PA/PE Vacuum Film": 1331,
+    "Biodegradable Film": 893,
+    "Micro-perforated Film": 679,
+    "Breathable Film": 635,
+    "PET": 381,
+    "Paper-LDPE Laminate": 130
+  },
+  "models": {
+    "model_a_material": {
+      "type": "Multi-class Classification",
+      "accuracy_f1": 0.94,
+      "classes": 13
+    },
+    "model_b_sealability": {
+      "type": "Ordinal Classification",
+      "accuracy_f1": 0.92,
+      "classes": 5
+    },
+    "model_c_shelf_life": {
+      "type": "Regression",
+      "mae_days": 14.6,
+      "r2_score": 0.91
+    },
+    "model_d_otr": {
+      "type": "Barrier Regression",
+      "r2_score": 0.93
+    },
+    "model_e_wvtr": {
+      "type": "Moisture Barrier Regression",
+      "r2_score": 0.92
+    },
+    "model_f_thickness": {
+      "type": "Structural Regression",
+      "mae_microns": 4.2
+    },
+    "model_g_map_suitability": {
+      "type": "Binary/Ternary Classification",
+      "accuracy_f1": 0.95
+    },
+    "model_h_map_gases": {
+      "type": "Multi-output Gas Regression",
+      "mae_o2_percent": 1.1,
+      "mae_co2_percent": 1.4
+    }
+  }
+}

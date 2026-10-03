@@ -1,0 +1,26 @@
+[
+  {
+    "commodity": "Dragon Fruit",
+    "category": "Fresh fruits",
+    "moisture_percent": 86.5,
+    "pH": 4.8,
+    "fat_percent": 0.4,
+    "respiration_rate": "Medium",
+    "respiration_mg_CO2_kg_hr": 22,
+    "recommended_storage_temp_C": 8,
+    "recommended_RH_percent": 90,
+    "storage_type": "Cold Chain",
+    "primary_spoilage_factors": [
+      "Scale/bract shriveling and desiccation",
+      "Fungal decay (Anthracnose, Alternaria, Rhizopus)",
+      "Chilling injury below 6°C"
+    ],
+    "typical_shelf_life_days": 18,
+    "confidence": "High",
+    "estimation_reasoning": "Baseline physiological values for Hylocereus species derived from postharvest handling literature; dragon fruit is non-climacteric, susceptible to moisture loss leading to rapid bract browning, and prone to chilling injury if held below 5-6°C.",
+    "queryCount": 2,
+    "learnedAt": "2026-10-02T20:34:33.105Z",
+    "lastRequestedAt": "2026-10-02T20:34:39.908Z",
+    "userConditionsHistory": []
+  }
+]

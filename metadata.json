@@ -1,0 +1,6 @@
+{
+  "name": "PackWise AI - Intelligent Food Packaging Decision Support",
+  "description": "AI-powered intelligent food packaging recommendation and decision-support system featuring ML prediction, What-If simulation, explainable AI, and Packaging Doctor.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
