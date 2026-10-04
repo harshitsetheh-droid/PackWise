@@ -17,6 +17,7 @@ import { HistoryView } from './components/HistoryView';
 import { DemoWalkthroughModal } from './components/DemoWalkthroughModal';
 import { AboutModal } from './components/AboutModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
+import { AdminDataStudio } from './components/AdminDataStudio';
 import {
   MLRecommendation,
   UserInputConditions,
@@ -26,6 +27,7 @@ import {
   RecommendationFeedback,
 } from './types/packaging';
 import { runPackagingRecommendationPipeline } from './ml/engine';
+import { logUserGeneratedCandidate } from './services/trainingCandidatesService';
 import { RotateCcw } from 'lucide-react';
 
 // Pre-seeded initial recommendations so users immediately see rich, realistic historical data
@@ -82,6 +84,50 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
 
+  // User Role: 'user' or 'admin'
+  const [userRole, setUserRole] = useState<'user' | 'admin'>(() => {
+    try {
+      const saved = localStorage.getItem('packwise_user_role');
+      if (saved === 'admin' || saved === 'user') return saved;
+    } catch {}
+    return 'admin'; // default to admin for instant access to newly requested features
+  });
+
+  // Total Training Rows: dynamically expands from 20k as Admin imports Excel/CSV data
+  const [totalTrainingRows, setTotalTrainingRows] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('packwise_training_rows_count');
+      if (saved) return Number(saved) || 20000;
+    } catch {}
+    return 20000;
+  });
+
+  // Save role to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('packwise_user_role', userRole);
+    } catch {}
+  }, [userRole]);
+
+  // Save total training rows to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('packwise_training_rows_count', String(totalTrainingRows));
+    } catch {}
+  }, [totalTrainingRows]);
+
+  // Sync total training rows with backend dataset stats on mount
+  useEffect(() => {
+    fetch('/api/admin/dataset-stats')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.totalTrainingRows && typeof data.totalTrainingRows === 'number') {
+          setTotalTrainingRows((prev) => Math.max(prev, data.totalTrainingRows));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // History of recommendations
   const [recommendationsHistory, setRecommendationsHistory] = useState<MLRecommendation[]>(() => {
     try {
@@ -120,6 +166,11 @@ export default function App() {
 
     // Auto-save to history
     setRecommendationsHistory((prev) => [newRec, ...prev.filter((r) => r.id !== newRec.id)]);
+
+    // Automated Logger in the recommendation pipeline: record unique user input as training row candidate
+    logUserGeneratedCandidate(conditions, newRec).catch((err) =>
+      console.warn('Auto-logging candidate error:', err)
+    );
   };
 
   const handleSaveToHistory = (rec: MLRecommendation) => {
@@ -231,6 +282,8 @@ export default function App() {
         onClose={() => setIsMobileMenuOpen(false)}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+        userRole={userRole}
+        setUserRole={setUserRole}
       />
 
       {/* Main Content Area */}
@@ -249,6 +302,8 @@ export default function App() {
           onToggleSidebarCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
           onSelectCommodity={handleHeaderSelectCommodity}
           onSelectMaterial={handleHeaderSelectMaterial}
+          userRole={userRole}
+          setUserRole={setUserRole}
         />
 
         {/* View Router */}
@@ -260,6 +315,7 @@ export default function App() {
               onSelectRecommendation={handleSelectFromHistory}
               onOpenDemo={() => setIsDemoOpen(true)}
               isMsmeMode={isMsmeMode}
+              totalTrainingRows={totalTrainingRows}
             />
           )}
 
@@ -290,6 +346,8 @@ export default function App() {
                 <RecommendationWizard
                   onGenerateRecommendation={handleGenerateRecommendation}
                   isMsmeMode={isMsmeMode}
+                  totalTrainingRows={totalTrainingRows}
+                  setTotalTrainingRows={setTotalTrainingRows}
                 />
               )}
             </>
@@ -333,6 +391,15 @@ export default function App() {
               onClearHistory={handleClearHistory}
               setActiveTab={setActiveTab}
               onLaunchWhatIf={handleLaunchWhatIf}
+            />
+          )}
+
+          {activeTab === 'admin' && (
+            <AdminDataStudio
+              totalTrainingRows={totalTrainingRows}
+              setTotalTrainingRows={setTotalTrainingRows}
+              userRole={userRole}
+              setUserRole={setUserRole}
             />
           )}
 

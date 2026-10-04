@@ -10,6 +10,7 @@ import {
   MAPSuitability,
 } from '../types/packaging';
 import { PACKAGING_MATERIALS } from '../data/materials';
+import { getActiveModelId, getModelById } from '../data/models_registry';
 
 /**
  * PackWise ML Engine: Multi-task Tabular Ensemble Pipeline
@@ -178,14 +179,165 @@ function predictWVTRRequirement(input: UserInputConditions): number {
 
 /**
  * Model A: Packaging Material Classification
+ * Incorporates active model architecture selection (RF Ensemble, Eco Circular, Ultra Barrier, or MSME Fast).
  */
-function predictPackagingMaterial(input: UserInputConditions, otr: number, wvtr: number): {
+function predictPackagingMaterial(
+  input: UserInputConditions,
+  otr: number,
+  wvtr: number,
+  modelId?: string
+): {
   materialName: string;
   structure: string;
   materialId: string;
 } {
   const { respiration_rate, category, fat_percent, desired_shelf_life_days, transportation_duration_days } = input;
+  const activeId = modelId || getActiveModelId();
 
+  // Model Branch 1: Eco & Circularity Optimizer (Prioritizes Mono-PE & Bio-polymers)
+  if (activeId === 'model_eco_circular') {
+    if (category === 'Grains' || category === 'Flours' || category === 'Pulses') {
+      return {
+        materialName: 'Recyclable Mono-PE Barrier Pouch',
+        structure: 'MDO-PE / Barrier EVOH Coating / PE (100% Recyclable Mono-PE)',
+        materialId: 'mono_pe_barrier',
+      };
+    }
+    if (category === 'Snacks' && desired_shelf_life_days <= 120) {
+      return {
+        materialName: 'Recyclable Mono-PE Barrier Pouch',
+        structure: 'MDO-PE / Barrier EVOH Coating / PE (100% Recyclable Mono-PE)',
+        materialId: 'mono_pe_barrier',
+      };
+    }
+    if (category === 'Bakery products' || (input.moisture_percent < 15 && desired_shelf_life_days <= 90)) {
+      return {
+        materialName: 'Biodegradable Kraft Paper / PLA Pouch',
+        structure: '50 gsm Virgin Kraft / 25µm Bio-based PLA Coating',
+        materialId: 'kraft_paper_pla',
+      };
+    }
+    if (respiration_rate === 'High' || respiration_rate === 'Medium') {
+      return {
+        materialName: 'Compostable PLA Film',
+        structure: '35µm Bio-derived Poly(lactic acid) Breathable Film',
+        materialId: 'pla_film',
+      };
+    }
+  }
+
+  // Model Branch 2: Ultra-Barrier & MAP Specialist
+  if (activeId === 'model_ultra_barrier_map') {
+    if (category === 'Meat' || category === 'Seafood' || category === 'Dairy') {
+      return {
+        materialName: 'EVOH Multilayer Barrier Film',
+        structure: 'PE / Tie / EVOH / Tie / PE (7-Layer Co-extruded MAP)',
+        materialId: 'evoh_multilayer',
+      };
+    }
+    if (fat_percent > 15 && desired_shelf_life_days > 90) {
+      return {
+        materialName: 'Aluminum Foil Laminate (PET/Alu/PE)',
+        structure: '12µm PET / 7µm Aluminum Foil / 60µm LLDPE',
+        materialId: 'aluminum_foil_laminate',
+      };
+    }
+  }
+
+  // Model Branch 3: Low-Cost MSME Heuristic
+  if (activeId === 'model_fast_heuristic_msme') {
+    if (category === 'Grains' || category === 'Pulses' || category === 'Flours') {
+      return {
+        materialName: 'HDPE (High-Density Polyethylene)',
+        structure: 'Monolayer Blown HDPE Heavy Gauge (50µm)',
+        materialId: 'hdpe',
+      };
+    }
+    if (desired_shelf_life_days <= 30 && input.moisture_percent > 10) {
+      return {
+        materialName: 'LDPE (Low-Density Polyethylene)',
+        structure: 'Monolayer LDPE Film (45µm)',
+        materialId: 'ldpe',
+      };
+    }
+  }
+
+  // Model Branch 4: Physics-Informed Neural Network (PINN) Barrier Regressor
+  if (activeId === 'model_pinn_barrier') {
+    // PINN enforces Fickian diffusion partial differential conservation laws
+    if (wvtr < 3.0 || otr < 10) {
+      if (desired_shelf_life_days > 120 || transportation_duration_days > 5) {
+        return {
+          materialName: 'EVOH Multilayer Barrier Film',
+          structure: 'PE / Tie / EVOH / Tie / PE (7-Layer Co-extruded Fickian Barrier)',
+          materialId: 'evoh_multilayer',
+        };
+      }
+      return {
+        materialName: 'Metallized PET (Met-PET/PE)',
+        structure: '12µm Met-PET / 50µm PE High-Barrier',
+        materialId: 'metallized_pet',
+      };
+    }
+  }
+
+  // Model Branch 5: CatBoost Multi-Output Decision Ensemble
+  if (activeId === 'model_catboost_multi') {
+    // CatBoost dynamic categorical encoding for complex fat/moisture boundaries
+    if (fat_percent > 15 && input.moisture_percent > 15) {
+      return {
+        materialName: 'PA/PE Vacuum Skin Film',
+        structure: '20µm BOPA (Nylon) / Tie / 70µm PE Sealant (CatBoost Multi-Seal)',
+        materialId: 'pa_pe_vacuum',
+      };
+    }
+  }
+
+  // Model Branch 6: Active Scavenging & Antimicrobial Bio-Preservation Engine
+  if (activeId === 'model_active_antimicrobial') {
+    if (category === 'Meat' || category === 'Seafood' || category === 'Dairy') {
+      return {
+        materialName: 'PA/PE Vacuum Skin Film',
+        structure: '20µm BOPA / Tie / 70µm PE with Antimicrobial Bio-Coating',
+        materialId: 'pa_pe_vacuum',
+      };
+    }
+    if (category === 'Fresh fruits' || category === 'Fresh vegetables') {
+      return {
+        materialName: 'Breathable Selective Membrane Film',
+        structure: 'Microporous PE Membrane with Active Ethylene Scavenging',
+        materialId: 'breathable_film',
+      };
+    }
+  }
+
+  // Model Branch 7: Multi-Objective Pareto Genetic Optimizer (Shelf Life vs Cost vs CO2)
+  if (activeId === 'model_pareto_genetic') {
+    if (category === 'Grains' || category === 'Flours' || category === 'Pulses' || category === 'Snacks') {
+      if (desired_shelf_life_days <= 150) {
+        return {
+          materialName: 'Recyclable Mono-PE Barrier Pouch',
+          structure: 'MDO-PE / Barrier EVOH Coating / PE (Pareto Optimal Cost-CO2)',
+          materialId: 'mono_pe_barrier',
+        };
+      }
+    }
+  }
+
+  // User-Defined Custom Model Architecture
+  const customModel = getModelById(activeId);
+  if (customModel && customModel.isCustom && customModel.preferredMaterialId) {
+    const customMat = PACKAGING_MATERIALS.find((m) => m.id === customModel.preferredMaterialId);
+    if (customMat) {
+      return {
+        materialName: customMat.name,
+        structure: customMat.structure_layers,
+        materialId: customMat.id,
+      };
+    }
+  }
+
+  // Default Ensemble Rules (model_rf_ensemble)
   // Rule 1: High respiring fresh produce
   if (respiration_rate === 'Very High') {
     return {
@@ -702,7 +854,13 @@ function generateAlternatives(
 /**
  * MASTER ENTRY POINT: Run the Complete ML Prediction Pipeline
  */
-export function runPackagingRecommendationPipeline(input: UserInputConditions): MLRecommendation {
+export function runPackagingRecommendationPipeline(
+  input: UserInputConditions,
+  modelId?: string
+): MLRecommendation {
+  const activeId = modelId || getActiveModelId();
+  const modelMeta = getModelById(activeId);
+
   // Step 1: Out-of-Distribution validation & confidence calibration
   const { isOod, warnings, confidenceLevel, confidenceScore } = checkDomainDistribution(input);
 
@@ -710,8 +868,8 @@ export function runPackagingRecommendationPipeline(input: UserInputConditions): 
   const otrReq = predictOTRRequirement(input);
   const wvtrReq = predictWVTRRequirement(input);
 
-  // Step 3: Model A (Packaging Material classification)
-  const { materialName, structure, materialId } = predictPackagingMaterial(input, otrReq, wvtrReq);
+  // Step 3: Model A (Packaging Material classification incorporating selected model)
+  const { materialName, structure, materialId } = predictPackagingMaterial(input, otrReq, wvtrReq, activeId);
   const matObj = PACKAGING_MATERIALS.find((m) => m.id === materialId) || PACKAGING_MATERIALS[0];
 
   // Step 4: Model F (Film thickness regression)
@@ -746,6 +904,8 @@ export function runPackagingRecommendationPipeline(input: UserInputConditions): 
   return {
     id: `rec_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     timestamp: new Date().toISOString(),
+    active_model_id: activeId,
+    active_model_name: modelMeta.name,
     commodityName: input.commodityName,
     category: input.category,
     inputConditions: input,

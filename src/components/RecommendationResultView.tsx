@@ -316,7 +316,11 @@ Deep Link: ${shareUrl}`;
           <div>
             <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-100/90 px-3 py-1 rounded-full border border-emerald-300 mb-2">
               <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
-              <span>Primary ML Recommendation (Model A)</span>
+              <span>
+                {recommendation.active_model_name
+                  ? `ML Prediction (${recommendation.active_model_name})`
+                  : 'Primary ML Recommendation (Model A)'}
+              </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black text-slate-900">
               {recommendation.recommended_material}

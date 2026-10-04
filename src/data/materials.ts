@@ -1,6 +1,6 @@
 import { PackagingMaterial } from '../types/packaging';
 
-export const PACKAGING_MATERIALS: PackagingMaterial[] = [
+export const DEFAULT_PACKAGING_MATERIALS: PackagingMaterial[] = [
   {
     id: 'ldpe',
     name: 'LDPE (Low-Density Polyethylene)',
@@ -645,3 +645,68 @@ export const PACKAGING_MATERIALS: PackagingMaterial[] = [
     ]
   }
 ];
+
+export let PACKAGING_MATERIALS: PackagingMaterial[] = [...DEFAULT_PACKAGING_MATERIALS];
+
+export function getStoredMaterials(): PackagingMaterial[] {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = localStorage.getItem('packwise_materials_registry');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load materials from localStorage', e);
+  }
+  return [...DEFAULT_PACKAGING_MATERIALS];
+}
+
+export function savePackagingMaterial(newMat: PackagingMaterial): void {
+  const current = getStoredMaterials();
+  const existingIdx = current.findIndex((m) => m.id === newMat.id);
+  if (existingIdx >= 0) {
+    current[existingIdx] = newMat;
+  } else {
+    current.push(newMat);
+  }
+  syncMaterials(current);
+}
+
+export function updatePackagingMaterial(updatedMat: PackagingMaterial): void {
+  savePackagingMaterial(updatedMat);
+}
+
+export function deletePackagingMaterial(materialId: string): void {
+  const current = getStoredMaterials();
+  const filtered = current.filter((m) => m.id !== materialId);
+  syncMaterials(filtered);
+}
+
+export function resetPackagingMaterials(): void {
+  syncMaterials([...DEFAULT_PACKAGING_MATERIALS]);
+}
+
+function syncMaterials(list: PackagingMaterial[]) {
+  PACKAGING_MATERIALS.length = 0;
+  PACKAGING_MATERIALS.push(...list);
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('packwise_materials_registry', JSON.stringify(list));
+    }
+  } catch (e) {
+    console.warn('Failed to save materials to localStorage', e);
+  }
+}
+
+// Hydrate on module load in browser
+if (typeof window !== 'undefined') {
+  try {
+    const stored = getStoredMaterials();
+    PACKAGING_MATERIALS.length = 0;
+    PACKAGING_MATERIALS.push(...stored);
+  } catch {}
+}

@@ -1,4 +1,5 @@
 import { PackagingDiagnosis, Commodity } from '../types/packaging';
+import { getCommodityIcon } from '../data/commodities';
 
 /**
  * Service to communicate with server-side Gemini endpoints,
@@ -12,6 +13,8 @@ export interface ResolvedCommodityResult {
   estimated: boolean;
   fromMemory?: boolean;
   queryCount?: number;
+  totalTrainingRows?: number;
+  rowsAdded?: number;
   learnedAt?: string;
   newlyLearned?: boolean;
   message?: string;
@@ -47,7 +50,7 @@ export async function resolveCommodityWithAI(commodityName: string): Promise<Res
             description: isFromMemory
               ? `Learned profile for ${commodityName} (queried ${data.data.queryCount || 1}x, saved in knowledge memory).`
               : `AI-resolved profile for ${commodityName}.`,
-            icon: isFromMemory ? '🧠' : '✨',
+            icon: getCommodityIcon(data.data.commodity || commodityName, data.data.category),
             fromMemory: isFromMemory,
             queryCount: data.data.queryCount || 1,
             learnedAt: data.data.learnedAt || data.learnedAt,
@@ -59,6 +62,8 @@ export async function resolveCommodityWithAI(commodityName: string): Promise<Res
           queryCount: data.data.queryCount || 1,
           learnedAt: data.data.learnedAt || data.learnedAt,
           newlyLearned: Boolean(data.newlyLearned),
+          totalTrainingRows: data.totalTrainingRows,
+          rowsAdded: data.rowsAdded,
           message: data.message,
           reasoning: data.data.estimation_reasoning || (isFromMemory ? 'Retrieved from PackWise continuous self-learning memory store.' : 'Derived via postharvest food property heuristics.'),
         };
@@ -91,7 +96,7 @@ export async function resolveCommodityWithAI(commodityName: string): Promise<Res
         typical_shelf_life_days: 14,
         primary_spoilage_factors: ['Moisture transpiration', 'Fungal decay'],
         description: `Heuristic fallback profile for ${commodityName}.`,
-        icon: '🌱',
+        icon: getCommodityIcon(commodityName, isFruit ? 'Fresh fruits' : 'Fresh vegetables'),
       },
       confidence: 'Medium',
       source: 'ai_estimated',
@@ -116,7 +121,7 @@ export async function resolveCommodityWithAI(commodityName: string): Promise<Res
         typical_shelf_life_days: 120,
         primary_spoilage_factors: ['Moisture caking / loss of crispness', 'Lipid rancidity'],
         description: `Heuristic fallback profile for dry snack ${commodityName}.`,
-        icon: '🍿',
+        icon: getCommodityIcon(commodityName, 'Snacks'),
       },
       confidence: 'Medium',
       source: 'ai_estimated',
@@ -140,7 +145,7 @@ export async function resolveCommodityWithAI(commodityName: string): Promise<Res
       typical_shelf_life_days: isMeat ? 7 : 30,
       primary_spoilage_factors: ['Oxidation', 'Microbial growth'],
       description: `Default baseline profile for ${commodityName}.`,
-      icon: '🍱',
+      icon: getCommodityIcon(commodityName, isMeat ? 'Meat' : 'Processed foods'),
     },
     confidence: 'Low',
     source: 'ai_estimated',

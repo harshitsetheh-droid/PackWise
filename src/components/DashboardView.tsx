@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { ActiveTab } from './Sidebar';
 import { MLRecommendation } from '../types/packaging';
+import { COMMODITIES_DATABASE } from '../data/commodities';
+import { getActiveModelId, getModelById } from '../data/models_registry';
 
 /**
  * Format numbers compactly:
@@ -45,6 +47,7 @@ interface DashboardViewProps {
   onSelectRecommendation: (rec: MLRecommendation) => void;
   onOpenDemo: () => void;
   isMsmeMode: boolean;
+  totalTrainingRows?: number;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -53,7 +56,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onSelectRecommendation,
   onOpenDemo,
   isMsmeMode,
+  totalTrainingRows = 20000,
 }) => {
+  const activeModelId = getActiveModelId();
+  const activeModel = getModelById(activeModelId);
   const latestRec = recommendationsHistory[0] || null;
   const recentRecs = recommendationsHistory.slice(0, 3);
   const simulationCount = Math.max(0, recommendationsHistory.length > 0 ? recommendationsHistory.length * 2 - 1 : 0);
@@ -107,27 +113,35 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           {/* Right Column: Training Snapshot Card */}
           <div className="lg:col-span-5">
-            <div className="rounded-2xl bg-black/25 border border-white/15 p-5 backdrop-blur-xs space-y-4">
+            <div
+              onClick={() => setActiveTab('admin')}
+              className="rounded-2xl bg-black/25 border border-white/15 p-5 backdrop-blur-xs space-y-4 hover:border-emerald-400 transition-all cursor-pointer group"
+              title="Click to open Admin & Dataset Studio"
+            >
               <div className="flex items-center justify-between text-xs pb-1 border-b border-white/10">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                  <span className="font-extrabold uppercase tracking-wider text-[11px] text-white">
+                  <span className="font-extrabold uppercase tracking-wider text-[11px] text-white group-hover:text-emerald-300 transition-colors">
                     Training Snapshot
                   </span>
                 </div>
                 <span className="text-[11px] text-emerald-200/70 font-mono">
-                  packaging-recommendation-v1
+                  {activeModel.code}
                 </span>
               </div>
 
               {/* 3 Metric Columns */}
               <div className="grid grid-cols-3 gap-3 sm:gap-4 text-left pt-1">
                 <div className="min-w-0">
-                  <div className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none">{formatCompactNumber(20000)}</div>
+                  <div className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none">
+                    {formatCompactNumber(totalTrainingRows)}
+                  </div>
                   <div className="text-[11px] text-emerald-200/80 mt-1 whitespace-nowrap">training rows</div>
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none">89</div>
+                  <div className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none">
+                    {COMMODITIES_DATABASE.length}
+                  </div>
                   <div className="text-[11px] text-emerald-200/80 mt-1 whitespace-nowrap">food profiles</div>
                 </div>
                 <div className="min-w-0">
@@ -139,17 +153,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               {/* Macro F1 Progress Bar */}
               <div className="space-y-1.5 pt-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-emerald-100 font-medium text-[11px]">Material holdout macro-F1</span>
-                  <span className="font-extrabold text-amber-300 text-xs">22.2%</span>
+                  <span className="text-emerald-100 font-medium text-[11px]">Holdout macro-F1 ({activeModel.focus})</span>
+                  <span className="font-extrabold text-amber-300 text-xs">{activeModel.f1Score}</span>
                 </div>
                 <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
                   <div
                     className="bg-amber-400 h-full rounded-full"
-                    style={{ width: '22.2%' }}
+                    style={{ width: activeModel.f1Score }}
                   ></div>
                 </div>
-                <div className="text-[10px] text-emerald-200/60 pt-0.5">
-                  RandomForest · synthetic holdout · low reliability
+                <div className="text-[10px] text-emerald-200/60 pt-0.5 flex items-center justify-between">
+                  <span className="truncate max-w-[200px]">{activeModel.name.split('(')[0]}</span>
+                  <span className="text-emerald-300 font-bold group-hover:underline">Admin Studio →</span>
                 </div>
               </div>
             </div>
@@ -177,7 +192,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span className="text-xs font-semibold text-slate-500">Commodities</span>
             <Leaf className="w-4 h-4 text-emerald-700" />
           </div>
-          <div className="text-3xl font-black text-slate-900 mt-2">89</div>
+          <div className="text-3xl font-black text-slate-900 mt-2">
+            {COMMODITIES_DATABASE.length}
+          </div>
           <div className="text-[11px] text-slate-400 mt-1">Workbook vocabulary</div>
         </div>
 

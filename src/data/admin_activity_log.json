@@ -1,0 +1,54 @@
+[
+  {
+    "id": "act_1791115637863_2cgb",
+    "timestamp": "2026-10-04T12:07:17.863Z",
+    "category": "dataset",
+    "action": "import",
+    "title": "Candidate Approved: Organic Black Turmeric (Curcuma caesia)",
+    "description": "Admin approved user-generated candidate \"Organic Black Turmeric (Curcuma caesia)\" (Condiments). Committed +250 synthetic rows to master training dataset.",
+    "actor": "Admin",
+    "metadata": {
+      "candidateId": "cand_init_1",
+      "commodityName": "Organic Black Turmeric (Curcuma caesia)",
+      "rowsAdded": 250,
+      "totalRows": 20250
+    }
+  },
+  {
+    "id": "act_seed_1",
+    "timestamp": "2026-10-04T07:07:17.863Z",
+    "category": "dataset",
+    "action": "import",
+    "title": "Baseline Dataset Calibration Initialized",
+    "description": "System booted with 20,000 synthetic holdout records and 89 food commodities.",
+    "actor": "System Engine",
+    "metadata": {
+      "totalRows": 20000,
+      "commoditiesCount": 89
+    }
+  },
+  {
+    "id": "act_seed_2",
+    "timestamp": "2026-10-04T10:07:17.863Z",
+    "category": "material",
+    "action": "create",
+    "title": "13 Certified Packaging Materials Registered",
+    "description": "Factory baseline barrier materials loaded into catalog (LDPE, HDPE, EVOH, etc.).",
+    "actor": "Admin",
+    "metadata": {
+      "materialsCount": 13
+    }
+  },
+  {
+    "id": "act_seed_3",
+    "timestamp": "2026-10-04T11:37:17.863Z",
+    "category": "model",
+    "action": "update",
+    "title": "Default Architecture Deployed",
+    "description": "Random Forest Multi-Target Classifier calibrated as primary inference engine.",
+    "actor": "Admin",
+    "metadata": {
+      "modelId": "model_rf_ensemble"
+    }
+  }
+]

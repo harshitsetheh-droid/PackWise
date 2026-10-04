@@ -13,9 +13,10 @@ const host = '0.0.0.0';
 app.use(express.json());
 
 // Initialize Gemini Client
-const ai = process.env.GEMINI_API_KEY
+const geminiApiKey = process.env.GEMINI_API_KEY || '';
+const ai = geminiApiKey
   ? new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
+      apiKey: geminiApiKey,
       httpOptions: {
         headers: {
           'User-Agent': 'aistudio-build',
@@ -27,6 +28,201 @@ const ai = process.env.GEMINI_API_KEY
 import fs from 'fs';
 
 const LEARNED_COMMODITIES_PATH = path.resolve(process.cwd(), 'src/data/learned_commodities.json');
+const ADMIN_STATE_PATH = path.resolve(process.cwd(), 'src/data/admin_dataset_state.json');
+const MATERIALS_STATE_PATH = path.resolve(process.cwd(), 'src/data/admin_materials_state.json');
+const ACTIVITY_LOG_PATH = path.resolve(process.cwd(), 'src/data/admin_activity_log.json');
+const PENDING_CANDIDATES_PATH = path.resolve(process.cwd(), 'src/data/pending_training_candidates.json');
+
+export interface PendingCandidateRecord {
+  id: string;
+  timestamp: string;
+  commodityName: string;
+  category: string;
+  moisture_percent: number;
+  pH: number;
+  fat_percent: number;
+  respiration_rate: string;
+  respiration_mg_CO2_kg_hr: number;
+  storage_temperature_C: number;
+  relative_humidity_percent: number;
+  storage_type: string;
+  desired_shelf_life_days: number;
+  recommendedMaterialId: string;
+  recommendedMaterialName: string;
+  predictedShelfLifeDays: number;
+  confidenceScore: number;
+  status: 'pending' | 'approved' | 'rejected';
+  syntheticRowsYield: number;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  rejectionReason?: string;
+  source: string;
+}
+
+function loadPendingCandidates(): PendingCandidateRecord[] {
+  try {
+    if (fs.existsSync(PENDING_CANDIDATES_PATH)) {
+      const raw = fs.readFileSync(PENDING_CANDIDATES_PATH, 'utf-8');
+      return JSON.parse(raw);
+    }
+  } catch (err) {
+    console.error('Failed to read pending candidates file:', err);
+  }
+  return [
+    {
+      id: 'cand_init_1',
+      timestamp: new Date(Date.now() - 3600000 * 2.5).toISOString(),
+      commodityName: 'Organic Black Turmeric (Curcuma caesia)',
+      category: 'Condiments',
+      moisture_percent: 12.0,
+      pH: 6.1,
+      fat_percent: 1.8,
+      respiration_rate: 'None',
+      respiration_mg_CO2_kg_hr: 0,
+      storage_temperature_C: 22,
+      relative_humidity_percent: 55,
+      storage_type: 'Dry Storage',
+      desired_shelf_life_days: 180,
+      recommendedMaterialId: 'aluminum_foil_laminate',
+      recommendedMaterialName: 'Aluminum Foil Multi-Layer Laminate',
+      predictedShelfLifeDays: 240,
+      confidenceScore: 92,
+      status: 'pending',
+      syntheticRowsYield: 250,
+      source: 'user_recommendation',
+    },
+    {
+      id: 'cand_init_2',
+      timestamp: new Date(Date.now() - 3600000 * 1.2).toISOString(),
+      commodityName: 'Vacuum Freeze-Dried Strawberries',
+      category: 'Snacks',
+      moisture_percent: 2.5,
+      pH: 3.8,
+      fat_percent: 0.4,
+      respiration_rate: 'None',
+      respiration_mg_CO2_kg_hr: 0,
+      storage_temperature_C: 20,
+      relative_humidity_percent: 45,
+      storage_type: 'Dry Storage',
+      desired_shelf_life_days: 270,
+      recommendedMaterialId: 'evoh_multilayer',
+      recommendedMaterialName: 'EVOH Multilayer Barrier Film',
+      predictedShelfLifeDays: 300,
+      confidenceScore: 89,
+      status: 'pending',
+      syntheticRowsYield: 200,
+      source: 'user_recommendation',
+    },
+  ];
+}
+
+function savePendingCandidates(list: PendingCandidateRecord[]) {
+  try {
+    fs.writeFileSync(PENDING_CANDIDATES_PATH, JSON.stringify(list, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Failed to write pending candidates file:', err);
+  }
+}
+
+export interface AdminActivityRecord {
+  id: string;
+  timestamp: string;
+  category: 'dataset' | 'material' | 'model' | 'system';
+  action: 'create' | 'update' | 'delete' | 'import' | 'reset' | 'discover';
+  title: string;
+  description: string;
+  actor: 'Admin' | 'User Query (AI Engine)' | 'System Engine';
+  metadata?: Record<string, any>;
+}
+
+function loadActivityLog(): AdminActivityRecord[] {
+  try {
+    if (fs.existsSync(ACTIVITY_LOG_PATH)) {
+      const raw = fs.readFileSync(ACTIVITY_LOG_PATH, 'utf-8');
+      return JSON.parse(raw);
+    }
+  } catch (err) {
+    console.error('Failed to read activity log file:', err);
+  }
+  // Default pre-seeded audit history for immediate transparency
+  return [
+    {
+      id: 'act_seed_1',
+      timestamp: new Date(Date.now() - 3600000 * 5).toISOString(),
+      category: 'dataset',
+      action: 'import',
+      title: 'Baseline Dataset Calibration Initialized',
+      description: 'System booted with 20,000 synthetic holdout records and 89 food commodities.',
+      actor: 'System Engine',
+      metadata: { totalRows: 20000, commoditiesCount: 89 },
+    },
+    {
+      id: 'act_seed_2',
+      timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
+      category: 'material',
+      action: 'create',
+      title: '13 Certified Packaging Materials Registered',
+      description: 'Factory baseline barrier materials loaded into catalog (LDPE, HDPE, EVOH, etc.).',
+      actor: 'Admin',
+      metadata: { materialsCount: 13 },
+    },
+    {
+      id: 'act_seed_3',
+      timestamp: new Date(Date.now() - 1800000).toISOString(),
+      category: 'model',
+      action: 'update',
+      title: 'Default Architecture Deployed',
+      description: 'Random Forest Multi-Target Classifier calibrated as primary inference engine.',
+      actor: 'Admin',
+      metadata: { modelId: 'model_rf_ensemble' },
+    },
+  ];
+}
+
+function saveActivityLog(list: AdminActivityRecord[]) {
+  try {
+    fs.writeFileSync(ACTIVITY_LOG_PATH, JSON.stringify(list.slice(0, 100), null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Failed to write activity log file:', err);
+  }
+}
+
+function recordActivity(record: Omit<AdminActivityRecord, 'id' | 'timestamp'> & { id?: string; timestamp?: string }) {
+  const current = loadActivityLog();
+  const entry: AdminActivityRecord = {
+    id: record.id || 'act_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    timestamp: record.timestamp || new Date().toISOString(),
+    category: record.category,
+    action: record.action,
+    title: record.title,
+    description: record.description,
+    actor: record.actor,
+    metadata: record.metadata,
+  };
+  current.unshift(entry);
+  saveActivityLog(current);
+  return entry;
+}
+
+function loadMaterialsState(): any[] {
+  try {
+    if (fs.existsSync(MATERIALS_STATE_PATH)) {
+      const raw = fs.readFileSync(MATERIALS_STATE_PATH, 'utf-8');
+      return JSON.parse(raw);
+    }
+  } catch (err) {
+    console.error('Failed to read materials state file:', err);
+  }
+  return [];
+}
+
+function saveMaterialsState(materials: any[]) {
+  try {
+    fs.writeFileSync(MATERIALS_STATE_PATH, JSON.stringify(materials, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Failed to write materials state file:', err);
+  }
+}
 
 export interface LearnedCommodityRecord {
   commodity: string;
@@ -53,6 +249,38 @@ export interface LearnedCommodityRecord {
     recommended_material?: string;
     timestamp: string;
   }[];
+}
+
+interface AdminDatasetState {
+  totalTrainingRows: number;
+  activeModelId?: string;
+  customModels?: any[];
+  importedHistory: {
+    id: string;
+    fileName: string;
+    rowsAdded: number;
+    commoditiesCount: number;
+    timestamp: string;
+  }[];
+}
+
+function loadAdminState(): AdminDatasetState {
+  try {
+    if (fs.existsSync(ADMIN_STATE_PATH)) {
+      return JSON.parse(fs.readFileSync(ADMIN_STATE_PATH, 'utf-8'));
+    }
+  } catch (err) {
+    console.error('Failed to read admin dataset state:', err);
+  }
+  return { totalTrainingRows: 20000, activeModelId: 'model_rf_ensemble', customModels: [], importedHistory: [] };
+}
+
+function saveAdminState(state: AdminDatasetState) {
+  try {
+    fs.writeFileSync(ADMIN_STATE_PATH, JSON.stringify(state, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Failed to write admin dataset state:', err);
+  }
 }
 
 function loadLearnedCommodities(): LearnedCommodityRecord[] {
@@ -95,6 +323,665 @@ app.get('/api/commodities/learned', (req, res) => {
     count: list.length,
     data: list,
   });
+});
+
+// API: Get Admin Dataset Stats
+app.get('/api/admin/dataset-stats', (req, res) => {
+  const state = loadAdminState();
+  const learned = loadLearnedCommodities();
+  res.json({
+    success: true,
+    totalTrainingRows: state.totalTrainingRows,
+    baseTrainingRows: 20000,
+    activeModelId: state.activeModelId || 'model_rf_ensemble',
+    customCommoditiesCount: learned.length,
+    totalCommoditiesCount: 89 + learned.length,
+    importedHistory: state.importedHistory,
+  });
+});
+
+// API: Get Active Model
+app.get('/api/admin/active-model', (req, res) => {
+  const state = loadAdminState();
+  res.json({
+    success: true,
+    activeModelId: state.activeModelId || 'model_rf_ensemble',
+  });
+});
+
+// API: Set Active Model
+app.post('/api/admin/active-model', (req, res) => {
+  try {
+    const { modelId } = req.body;
+    if (!modelId) {
+      return res.status(400).json({ error: 'modelId is required' });
+    }
+    const state = loadAdminState();
+    state.activeModelId = modelId;
+    saveAdminState(state);
+
+    recordActivity({
+      category: 'model',
+      action: 'update',
+      title: `Active ML Model Switched: ${modelId}`,
+      description: `Inference pipeline switched to architecture "${modelId}". Recommendations and simulator now execute via this model.`,
+      actor: 'Admin',
+      metadata: { modelId },
+    });
+
+    res.json({
+      success: true,
+      activeModelId: modelId,
+      message: `Active model switched to ${modelId}`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Get Activity Log (Admin Audit Trail)
+app.get('/api/admin/activity-log', (req, res) => {
+  const logs = loadActivityLog();
+  res.json({
+    success: true,
+    count: logs.length,
+    logs,
+  });
+});
+
+// API: Append Activity Log
+app.post('/api/admin/activity-log', (req, res) => {
+  try {
+    const entry = recordActivity(req.body);
+    res.json({ success: true, entry });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Clear Activity Log
+app.delete('/api/admin/activity-log', (req, res) => {
+  saveActivityLog([]);
+  res.json({ success: true, message: 'Activity log cleared.' });
+});
+
+// ==================== CANDIDATE LOGGING & REVIEW QUEUE ====================
+
+// API: Get All Pending Training Row Candidates
+app.get('/api/admin/pending-candidates', (req, res) => {
+  const candidates = loadPendingCandidates();
+  const pendingCount = candidates.filter((c) => c.status === 'pending').length;
+  const approvedCount = candidates.filter((c) => c.status === 'approved').length;
+  const rejectedCount = candidates.filter((c) => c.status === 'rejected').length;
+
+  res.json({
+    success: true,
+    candidates,
+    pendingCount,
+    approvedCount,
+    rejectedCount,
+    totalCount: candidates.length,
+  });
+});
+
+// API: Automated Logger - records unique user input as training candidate
+app.post('/api/recommendations/log-candidate', (req, res) => {
+  try {
+    const candidateData = req.body;
+    if (!candidateData || !candidateData.commodityName) {
+      return res.status(400).json({ error: 'commodityName is required' });
+    }
+
+    const currentList = loadPendingCandidates();
+    const commName = candidateData.commodityName.toLowerCase().trim();
+
+    // Deduplication check: check if near-identical condition already recorded
+    const isDuplicate = currentList.some((item) => {
+      if (item.commodityName.toLowerCase().trim() !== commName) return false;
+      const moistureClose = Math.abs(item.moisture_percent - Number(candidateData.moisture_percent || 0)) < 3.0;
+      const phClose = Math.abs(item.pH - Number(candidateData.pH || 0)) < 0.4;
+      const tempClose = Math.abs(item.storage_temperature_C - Number(candidateData.storage_temperature_C || 0)) < 2.0;
+      return moistureClose && phClose && tempClose;
+    });
+
+    if (isDuplicate) {
+      const existing = currentList.find(
+        (item) => item.commodityName.toLowerCase().trim() === commName
+      );
+      return res.json({
+        success: true,
+        isNew: false,
+        message: 'Duplicate candidate detected, skipping duplicate logging.',
+        candidate: existing,
+      });
+    }
+
+    const newCandidate: PendingCandidateRecord = {
+      id: candidateData.id || `cand_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      timestamp: candidateData.timestamp || new Date().toISOString(),
+      commodityName: candidateData.commodityName,
+      category: candidateData.category || 'Processed foods',
+      moisture_percent: Number(candidateData.moisture_percent) || 20,
+      pH: Number(candidateData.pH) || 5.8,
+      fat_percent: Number(candidateData.fat_percent) || 5,
+      respiration_rate: candidateData.respiration_rate || 'None',
+      respiration_mg_CO2_kg_hr: Number(candidateData.respiration_mg_CO2_kg_hr) || 0,
+      storage_temperature_C: Number(candidateData.storage_temperature_C) || 20,
+      relative_humidity_percent: Number(candidateData.relative_humidity_percent) || 60,
+      storage_type: candidateData.storage_type || 'Ambient',
+      desired_shelf_life_days: Number(candidateData.desired_shelf_life_days) || 30,
+      recommendedMaterialId: candidateData.recommendedMaterialId || 'ldpe',
+      recommendedMaterialName: candidateData.recommendedMaterialName || 'LDPE Pouch',
+      predictedShelfLifeDays: Number(candidateData.predictedShelfLifeDays) || 35,
+      confidenceScore: Number(candidateData.confidenceScore) || 85,
+      status: 'pending',
+      syntheticRowsYield: Number(candidateData.syntheticRowsYield) || 200,
+      source: candidateData.source || 'user_recommendation',
+    };
+
+    currentList.unshift(newCandidate);
+    savePendingCandidates(currentList);
+
+    res.json({
+      success: true,
+      isNew: true,
+      message: `User query for "${newCandidate.commodityName}" automatically logged as training row candidate.`,
+      candidate: newCandidate,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Approve Candidate and Commit to Master Dataset
+app.post('/api/admin/approve-candidate', (req, res) => {
+  try {
+    const { candidateId } = req.body;
+    if (!candidateId) {
+      return res.status(400).json({ error: 'candidateId is required' });
+    }
+
+    const currentList = loadPendingCandidates();
+    const candidateIdx = currentList.findIndex((c) => c.id === candidateId);
+
+    if (candidateIdx === -1) {
+      return res.status(404).json({ error: 'Candidate not found' });
+    }
+
+    const candidate = currentList[candidateIdx];
+    if (candidate.status === 'approved') {
+      return res.json({
+        success: true,
+        message: 'Candidate was already approved previously.',
+        candidate,
+      });
+    }
+
+    candidate.status = 'approved';
+    candidate.reviewedAt = new Date().toISOString();
+    candidate.reviewedBy = 'Admin';
+    savePendingCandidates(currentList);
+
+    // Commit to master dataset: add synthetic training rows
+    const state = loadAdminState();
+    const rowsToAdd = candidate.syntheticRowsYield || 200;
+    state.totalTrainingRows += rowsToAdd;
+    state.importedHistory.unshift({
+      id: 'commit_' + Date.now(),
+      fileName: `Approved Candidate: ${candidate.commodityName}`,
+      rowsAdded: rowsToAdd,
+      commoditiesCount: 1,
+      timestamp: new Date().toISOString(),
+    });
+    saveAdminState(state);
+
+    // Record activity log
+    recordActivity({
+      category: 'dataset',
+      action: 'import',
+      title: `Candidate Approved: ${candidate.commodityName}`,
+      description: `Admin approved user-generated candidate "${candidate.commodityName}" (${candidate.category}). Committed +${rowsToAdd.toLocaleString()} synthetic rows to master training dataset.`,
+      actor: 'Admin',
+      metadata: {
+        candidateId,
+        commodityName: candidate.commodityName,
+        rowsAdded: rowsToAdd,
+        totalRows: state.totalTrainingRows,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Candidate "${candidate.commodityName}" approved! +${rowsToAdd} synthetic rows committed to master training dataset.`,
+      candidate,
+      totalTrainingRows: state.totalTrainingRows,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Reject Candidate
+app.post('/api/admin/reject-candidate', (req, res) => {
+  try {
+    const { candidateId, reason } = req.body;
+    if (!candidateId) {
+      return res.status(400).json({ error: 'candidateId is required' });
+    }
+
+    const currentList = loadPendingCandidates();
+    const candidateIdx = currentList.findIndex((c) => c.id === candidateId);
+
+    if (candidateIdx === -1) {
+      return res.status(404).json({ error: 'Candidate not found' });
+    }
+
+    const candidate = currentList[candidateIdx];
+    candidate.status = 'rejected';
+    candidate.rejectionReason = reason || 'Declined during expert admin review.';
+    candidate.reviewedAt = new Date().toISOString();
+    candidate.reviewedBy = 'Admin';
+    savePendingCandidates(currentList);
+
+    recordActivity({
+      category: 'dataset',
+      action: 'update',
+      title: `Candidate Rejected: ${candidate.commodityName}`,
+      description: `Admin reviewed and rejected candidate "${candidate.commodityName}". Reason: ${candidate.rejectionReason}`,
+      actor: 'Admin',
+      metadata: { candidateId, commodityName: candidate.commodityName },
+    });
+
+    res.json({
+      success: true,
+      message: `Candidate "${candidate.commodityName}" rejected.`,
+      candidate,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Batch Approve All Pending Candidates
+app.post('/api/admin/approve-all-candidates', (req, res) => {
+  try {
+    const currentList = loadPendingCandidates();
+    const pendingItems = currentList.filter((c) => c.status === 'pending');
+
+    if (pendingItems.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No pending candidates to approve.',
+        approvedCount: 0,
+      });
+    }
+
+    let totalRowsAdded = 0;
+    const nowStr = new Date().toISOString();
+
+    pendingItems.forEach((cand) => {
+      cand.status = 'approved';
+      cand.reviewedAt = nowStr;
+      cand.reviewedBy = 'Admin';
+      totalRowsAdded += cand.syntheticRowsYield || 200;
+    });
+
+    savePendingCandidates(currentList);
+
+    const state = loadAdminState();
+    state.totalTrainingRows += totalRowsAdded;
+    state.importedHistory.unshift({
+      id: 'bulk_commit_' + Date.now(),
+      fileName: `Bulk Approved: ${pendingItems.length} Candidates`,
+      rowsAdded: totalRowsAdded,
+      commoditiesCount: pendingItems.length,
+      timestamp: nowStr,
+    });
+    saveAdminState(state);
+
+    recordActivity({
+      category: 'dataset',
+      action: 'import',
+      title: `Batch Approved ${pendingItems.length} Candidates`,
+      description: `Admin committed all ${pendingItems.length} pending candidate rows. Expanded master dataset by +${totalRowsAdded.toLocaleString()} training rows.`,
+      actor: 'Admin',
+      metadata: {
+        candidatesApproved: pendingItems.length,
+        rowsAdded: totalRowsAdded,
+        totalRows: state.totalTrainingRows,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Successfully approved all ${pendingItems.length} pending candidates! +${totalRowsAdded.toLocaleString()} rows committed to master dataset.`,
+      approvedCount: pendingItems.length,
+      totalRowsAdded,
+      totalTrainingRows: state.totalTrainingRows,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Get Custom Models
+app.get('/api/admin/custom-models', (req, res) => {
+  const state = loadAdminState();
+  res.json({
+    success: true,
+    customModels: state.customModels || [],
+  });
+});
+
+// API: Save Custom Model
+app.post('/api/admin/custom-models', (req, res) => {
+  try {
+    const model = req.body;
+    if (!model || !model.id || !model.name) {
+      return res.status(400).json({ error: 'Model id and name are required' });
+    }
+    const state = loadAdminState();
+    const existing = state.customModels || [];
+    state.customModels = [...existing.filter((m: any) => m.id !== model.id), model];
+    saveAdminState(state);
+    res.json({
+      success: true,
+      message: `Custom model "${model.name}" saved to server state.`,
+      customModels: state.customModels,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Delete Custom Model
+app.delete('/api/admin/custom-models/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const state = loadAdminState();
+    const existing = state.customModels || [];
+    state.customModels = existing.filter((m: any) => m.id !== id);
+    saveAdminState(state);
+    res.json({
+      success: true,
+      message: `Custom model removed.`,
+      customModels: state.customModels,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Get Packaging Materials (Admin / System)
+app.get('/api/admin/materials', (req, res) => {
+  const customMaterials = loadMaterialsState();
+  res.json({
+    success: true,
+    materials: customMaterials,
+  });
+});
+
+// API: Save / Add Packaging Material
+app.post('/api/admin/materials', (req, res) => {
+  try {
+    const material = req.body;
+    if (!material || !material.id || !material.name) {
+      return res.status(400).json({ error: 'Material id and name are required' });
+    }
+    const current = loadMaterialsState();
+    const existingIdx = current.findIndex((m: any) => m.id === material.id);
+    const isNew = existingIdx < 0;
+    if (existingIdx >= 0) {
+      current[existingIdx] = material;
+    } else {
+      current.push(material);
+    }
+    saveMaterialsState(current);
+
+    recordActivity({
+      category: 'material',
+      action: isNew ? 'create' : 'update',
+      title: isNew ? `Material Added: ${material.name}` : `Material Updated: ${material.name}`,
+      description: `${isNew ? 'Registered new' : 'Updated'} packaging material "${material.name}" (${material.category}) with OTR: ${material.OTR_cc_m2_day} cc/m²/day, WVTR: ${material.WVTR_g_m2_day} g/m²/day, Gauge: ${material.film_thickness_micron}µm.`,
+      actor: 'Admin',
+      metadata: { materialId: material.id, materialName: material.name },
+    });
+
+    res.json({
+      success: true,
+      message: `Packaging material "${material.name}" saved successfully.`,
+      materials: current,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Update Existing Packaging Material
+app.put('/api/admin/materials/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const updated = req.body;
+    const current = loadMaterialsState();
+    const existingIdx = current.findIndex((m: any) => m.id === id);
+    if (existingIdx >= 0) {
+      current[existingIdx] = { ...current[existingIdx], ...updated, id };
+    } else {
+      current.push({ ...updated, id });
+    }
+    saveMaterialsState(current);
+
+    recordActivity({
+      category: 'material',
+      action: 'update',
+      title: `Material Specs Updated: ${updated.name || id}`,
+      description: `Modified barrier parameters, thickness (${updated.film_thickness_micron}µm), or commercial metrics for "${updated.name || id}".`,
+      actor: 'Admin',
+      metadata: { materialId: id, materialName: updated.name || id },
+    });
+
+    res.json({
+      success: true,
+      message: `Packaging material "${updated.name || id}" updated successfully.`,
+      materials: current,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Delete Packaging Material
+app.delete('/api/admin/materials/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const current = loadMaterialsState();
+    const target = current.find((m: any) => m.id === id);
+    const filtered = current.filter((m: any) => m.id !== id);
+    saveMaterialsState(filtered);
+
+    recordActivity({
+      category: 'material',
+      action: 'delete',
+      title: `Material Deleted: ${target?.name || id}`,
+      description: `Removed packaging material "${target?.name || id}" from active recommendation pipelines.`,
+      actor: 'Admin',
+      metadata: { materialId: id, materialName: target?.name },
+    });
+
+    res.json({
+      success: true,
+      message: `Packaging material removed from system.`,
+      materials: filtered,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Reset Materials to Defaults
+app.post('/api/admin/materials/reset', (req, res) => {
+  try {
+    saveMaterialsState([]);
+
+    recordActivity({
+      category: 'material',
+      action: 'reset',
+      title: 'Materials Reset to Factory Baseline',
+      description: 'Restored packaging materials catalogue back to 13 certified standard baseline polymers.',
+      actor: 'Admin',
+    });
+
+    res.json({
+      success: true,
+      message: 'Packaging materials reset to certified factory baseline.',
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Import dataset from Excel / CSV (Admin Role) with Data Merge
+app.post('/api/admin/import-commodities', (req, res) => {
+  try {
+    const { commodities = [], trainingRowsCount = 0, fileName = 'uploaded_dataset.xlsx' } = req.body;
+
+    const learnedList = loadLearnedCommodities();
+    let newItemsAdded = 0;
+    let existingItemsMerged = 0;
+
+    for (const item of commodities) {
+      const commName = (item.name || item.commodity || '').trim();
+      if (!commName) continue;
+
+      const existingIdx = learnedList.findIndex(
+        (l) => l.commodity.toLowerCase() === commName.toLowerCase()
+      );
+
+      const parsedFactors = Array.isArray(item.primary_spoilage_factors)
+        ? item.primary_spoilage_factors
+        : typeof item.primary_spoilage_factors === 'string'
+          ? item.primary_spoilage_factors.split(',').map((s: string) => s.trim())
+          : ['Moisture ingress', 'Microbial growth'];
+
+      const record: LearnedCommodityRecord = {
+        commodity: commName,
+        category: item.category || 'Processed foods',
+        moisture_percent: Number(item.moisture_percent) || 20,
+        pH: Number(item.pH) || 6.0,
+        fat_percent: Number(item.fat_percent) || 5,
+        respiration_rate: item.respiration_rate || 'Low',
+        respiration_mg_CO2_kg_hr: Number(item.respiration_mg_CO2_kg_hr) || 10,
+        recommended_storage_temp_C: Number(item.recommended_storage_temp_C) || 15,
+        recommended_RH_percent: Number(item.recommended_RH_percent) || 65,
+        storage_type: item.storage_type || 'Ambient',
+        primary_spoilage_factors: parsedFactors,
+        typical_shelf_life_days: Number(item.typical_shelf_life_days) || 30,
+        confidence: 'High',
+        estimation_reasoning: `Admin imported from ${fileName}`,
+        queryCount: 1,
+        learnedAt: new Date().toISOString(),
+        lastRequestedAt: new Date().toISOString(),
+      };
+
+      if (existingIdx >= 0) {
+        // Intelligent Merge: Combine spoilage factors, update lab parameters, retain usage count
+        const existing = learnedList[existingIdx];
+        const mergedFactors = Array.from(new Set([
+          ...(existing.primary_spoilage_factors || []),
+          ...parsedFactors,
+        ]));
+
+        learnedList[existingIdx] = {
+          ...existing,
+          category: record.category || existing.category,
+          moisture_percent: record.moisture_percent,
+          pH: record.pH,
+          fat_percent: record.fat_percent,
+          respiration_rate: record.respiration_rate,
+          respiration_mg_CO2_kg_hr: record.respiration_mg_CO2_kg_hr,
+          recommended_storage_temp_C: record.recommended_storage_temp_C,
+          recommended_RH_percent: record.recommended_RH_percent,
+          storage_type: record.storage_type,
+          typical_shelf_life_days: record.typical_shelf_life_days,
+          primary_spoilage_factors: mergedFactors,
+          estimation_reasoning: `Merged with dataset ${fileName}`,
+          lastRequestedAt: new Date().toISOString(),
+        };
+        existingItemsMerged++;
+      } else {
+        learnedList.push(record);
+        newItemsAdded++;
+      }
+    }
+
+    saveLearnedCommodities(learnedList);
+
+    // Update admin state with additional training rows
+    const state = loadAdminState();
+    const rowsToAdd =
+      Number(trainingRowsCount) > 0 ? Number(trainingRowsCount) : commodities.length * 200;
+    state.totalTrainingRows += rowsToAdd;
+    state.importedHistory.unshift({
+      id: 'import_' + Date.now(),
+      fileName,
+      rowsAdded: rowsToAdd,
+      commoditiesCount: commodities.length,
+      timestamp: new Date().toISOString(),
+    });
+
+    saveAdminState(state);
+
+    recordActivity({
+      category: 'dataset',
+      action: 'import',
+      title: `Dataset Ingestion: ${fileName}`,
+      description: `Ingested ${commodities.length} commodities (${newItemsAdded} new records created, ${existingItemsMerged} existing enriched). Expanded model training rows by +${rowsToAdd.toLocaleString()} (Total: ${state.totalTrainingRows.toLocaleString()}).`,
+      actor: 'Admin',
+      metadata: {
+        fileName,
+        rowsAdded: rowsToAdd,
+        totalRows: state.totalTrainingRows,
+        newCommoditiesCount: newItemsAdded,
+        mergedCommoditiesCount: existingItemsMerged,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Successfully merged dataset: ${newItemsAdded} new commodities created, ${existingItemsMerged} existing profiles enriched, and +${rowsToAdd} training rows added.`,
+      newCommoditiesAdded: newItemsAdded,
+      existingCommoditiesMerged: existingItemsMerged,
+      totalTrainingRows: state.totalTrainingRows,
+      totalCommodities: 89 + learnedList.length,
+      importedHistory: state.importedHistory,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Reset Dataset (Admin Role)
+app.post('/api/admin/reset-dataset', (req, res) => {
+  try {
+    saveAdminState({ totalTrainingRows: 20000, importedHistory: [] });
+
+    recordActivity({
+      category: 'dataset',
+      action: 'reset',
+      title: 'Dataset Reset to Factory Baseline',
+      description: 'Reset ML training dataset back to default 20,000 synthetic holdout records and 89 standard commodities.',
+      actor: 'Admin',
+      metadata: { totalRows: 20000 },
+    });
+
+    res.json({
+      success: true,
+      message: 'Dataset reset to baseline 20,000 rows.',
+      totalTrainingRows: 20000,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // API: Record user condition & packaging result for continuous self-learning
@@ -242,17 +1129,56 @@ Required JSON format:
       userConditionsHistory: [],
     };
 
-    learnedList.unshift(newLearned);
-    saveLearnedCommodities(learnedList);
+    // Strict de-duplication check: only append if not already in learnedList
+    const alreadyExists = learnedList.some(
+      (item) => item.commodity.toLowerCase() === newLearned.commodity.toLowerCase()
+    );
+
+    let rowsAdded = 0;
+    const state = loadAdminState();
+
+    if (!alreadyExists) {
+      learnedList.unshift(newLearned);
+      saveLearnedCommodities(learnedList);
+
+      // Automatically expand training rows for newly discovered food commodity
+      rowsAdded = 250;
+      state.totalTrainingRows += rowsAdded;
+      state.importedHistory.unshift({
+        id: 'user_' + Date.now(),
+        fileName: `User Discovered: ${newLearned.commodity}`,
+        rowsAdded,
+        commoditiesCount: 1,
+        timestamp: new Date().toISOString(),
+      });
+      saveAdminState(state);
+
+      recordActivity({
+        category: 'dataset',
+        action: 'discover',
+        title: `User Discovered: ${newLearned.commodity}`,
+        description: `Normal user queried unlisted food "${newLearned.commodity}". AI resolved properties and automatically expanded training dataset by +${rowsAdded} rows with zero duplicate data.`,
+        actor: 'User Query (AI Engine)',
+        metadata: {
+          commodityName: newLearned.commodity,
+          rowsAdded,
+          totalRows: state.totalTrainingRows,
+        },
+      });
+    }
 
     res.json({
       success: true,
       data: newLearned,
       source: 'ai_estimated',
-      newlyLearned: true,
+      newlyLearned: !alreadyExists,
       queryCount: 1,
+      totalTrainingRows: state.totalTrainingRows,
+      rowsAdded,
       learnedAt: newLearned.learnedAt,
-      message: 'New commodity analyzed via Gemini and successfully registered in continuous memory store.',
+      message: !alreadyExists
+        ? `New commodity "${newLearned.commodity}" learned and automatically expanded model training dataset by +${rowsAdded} rows!`
+        : `Commodity profile retrieved from knowledge base. No duplicate training rows created.`,
     });
   } catch (error: any) {
     console.error('Error resolving commodity with Gemini:', error);

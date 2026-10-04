@@ -9,6 +9,7 @@ import {
   Package,
   ArrowRight,
   Layers,
+  Database,
 } from 'lucide-react';
 import { ActiveTab } from './Sidebar';
 import { Commodity, PackagingMaterial } from '../types/packaging';
@@ -29,6 +30,8 @@ interface HeaderProps {
   onToggleSidebarCollapse?: () => void;
   onSelectCommodity?: (commodity: Commodity) => void;
   onSelectMaterial?: (material: PackagingMaterial) => void;
+  userRole?: 'user' | 'admin';
+  setUserRole?: (role: 'user' | 'admin') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -44,6 +47,8 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleSidebarCollapse,
   onSelectCommodity,
   onSelectMaterial,
+  userRole = 'user',
+  setUserRole,
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -134,9 +139,9 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="h-16 bg-white border-b border-[#e1e7dc] px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shrink-0">
+    <header className="h-16 bg-white border-b border-[#e1e7dc] px-4 sm:px-6 flex items-center justify-between gap-4 sm:gap-8 sticky top-0 z-30 shrink-0">
       {/* Left Section: Mobile Menu Button, Sidebar Toggle & Left-Shifted Search Bar */}
-      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 max-w-xl">
+      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
         <button
           onClick={onToggleMobileMenu}
           className="lg:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 shrink-0"
@@ -155,8 +160,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* Search Bar shifted to left */}
-        <div className="hidden sm:flex items-center flex-1 max-w-md relative" ref={containerRef}>
+        {/* Search Bar with comfortable fixed width and safe margin so it never crowds right buttons */}
+        <div className="hidden sm:flex items-center w-56 md:w-64 lg:w-72 relative" ref={containerRef}>
           <Search className="w-4 h-4 text-emerald-700 absolute left-3.5 pointer-events-none" />
           <input
             type="text"
@@ -297,7 +302,27 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        {/* Admin Data Studio Trigger */}
+        <button
+          onClick={() => {
+            if (userRole !== 'admin' && setUserRole) {
+              setUserRole('admin');
+            }
+            setActiveTab('admin');
+          }}
+          className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'admin' || userRole === 'admin'
+              ? 'bg-emerald-800 text-white border-emerald-900 shadow-2xs'
+              : 'bg-[#f9faf7] text-slate-700 border-[#e1e7dc] hover:bg-slate-100'
+          }`}
+          title="Admin & Dataset Studio for importing Excel/CSV data"
+        >
+          <Database className="w-3.5 h-3.5 text-emerald-300" />
+          <span className="hidden md:inline">Admin Studio</span>
+          <span className="md:hidden">Admin</span>
+        </button>
+
         {/* MSME / Small Farmer Mode Toggle */}
         <button
           onClick={() => setIsMsmeMode((prev) => !prev)}

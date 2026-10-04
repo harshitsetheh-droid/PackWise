@@ -151,6 +151,8 @@ export interface MLRecommendation {
   inputConditions: UserInputConditions;
 
   // Primary ML predictions
+  active_model_id?: string;
+  active_model_name?: string;
   recommended_material: string;
   packaging_structure: string;
   OTR_cc_m2_day: number;
@@ -243,4 +245,30 @@ export interface PackagingDiagnosis {
   }[];
   msmeFarmerTip: string;
   confidence: ConfidenceLevel;
+}
+
+export interface PendingTrainingCandidate {
+  id: string;
+  timestamp: string;
+  commodityName: string;
+  category: FoodCategory;
+  moisture_percent: number;
+  pH: number;
+  fat_percent: number;
+  respiration_rate: RespirationRate;
+  respiration_mg_CO2_kg_hr: number;
+  storage_temperature_C: number;
+  relative_humidity_percent: number;
+  storage_type: StorageType;
+  desired_shelf_life_days: number;
+  recommendedMaterialId: string;
+  recommendedMaterialName: string;
+  predictedShelfLifeDays: number;
+  confidenceScore: number;
+  status: 'pending' | 'approved' | 'rejected';
+  syntheticRowsYield: number;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  rejectionReason?: string;
+  source: 'user_recommendation' | 'whatif_simulator' | 'api_query';
 }

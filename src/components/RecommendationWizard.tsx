@@ -35,6 +35,8 @@ import { VoiceInputButton } from './VoiceInputButton';
 interface RecommendationWizardProps {
   onGenerateRecommendation: (conditions: UserInputConditions) => void;
   isMsmeMode: boolean;
+  totalTrainingRows?: number;
+  setTotalTrainingRows?: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const STORAGE_TYPES: StorageType[] = [
@@ -70,6 +72,8 @@ const FOOD_CATEGORIES: FoodCategory[] = [
 export const RecommendationWizard: React.FC<RecommendationWizardProps> = ({
   onGenerateRecommendation,
   isMsmeMode,
+  totalTrainingRows,
+  setTotalTrainingRows,
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -270,7 +274,7 @@ export const RecommendationWizard: React.FC<RecommendationWizardProps> = ({
           respiration: false,
         });
         setAiResolutionStatus(
-          `🧠 Retrieved from Self-Learning Knowledge Base! (Queried ${result.queryCount || 1} times previously — 0 API tokens used).`
+          `🧠 Retrieved from Self-Learning Knowledge Base! (Queried ${result.queryCount || 1} times previously — 0 duplicate training rows added).`
         );
       } else {
         setFieldSources({
@@ -297,8 +301,14 @@ export const RecommendationWizard: React.FC<RecommendationWizardProps> = ({
           fat: true,
           respiration: true,
         });
+
+        if (result.totalTrainingRows && setTotalTrainingRows) {
+          setTotalTrainingRows(result.totalTrainingRows);
+        }
+
+        const rowsNotice = result.rowsAdded ? ` (+${result.rowsAdded} training rows added)` : '';
         setAiResolutionStatus(
-          `✨ Newly analyzed via Gemini & permanently remembered into PackWise Memory Store for all future users!`
+          `✨ Newly discovered commodity "${comm.name}" analyzed & added to training dataset${rowsNotice} with zero duplicates!`
         );
         // Refresh learned list
         fetchLearnedCommodities().then(setLearnedCommodities);
