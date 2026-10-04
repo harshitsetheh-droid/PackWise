@@ -13,6 +13,9 @@ import {
   ShieldCheck,
   CheckCircle2,
   AlertCircle,
+  Sprout,
+  Store,
+  IndianRupee,
 } from 'lucide-react';
 import { ActiveTab } from './Sidebar';
 import { MLRecommendation } from '../types/packaging';
@@ -66,33 +69,60 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto pb-12">
-      {/* 1. Dark Forest Green Hero Banner matching image.png */}
-      <div className="relative overflow-hidden rounded-3xl bg-[#143d2b] text-white p-6 sm:p-8 lg:p-10 shadow-sm border border-emerald-900/40">
+      {/* 1. Hero Banner (Adaptive for MSME Mode vs Enterprise) */}
+      <div className={`relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 lg:p-10 shadow-sm border ${
+        isMsmeMode
+          ? 'bg-gradient-to-br from-[#1a3826] via-[#143d2b] to-[#2c3d1f] border-amber-600/40'
+          : 'bg-[#143d2b] border-emerald-900/40'
+      }`}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           {/* Left Column: Heading and Actions */}
           <div className="lg:col-span-7 space-y-4">
-            <div className="inline-flex items-center gap-2 text-[11px] font-bold tracking-wider text-emerald-300 uppercase">
-              <Leaf className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Data-Led Packaging Decisions</span>
+            <div className="inline-flex items-center gap-2 text-[11px] font-bold tracking-wider uppercase">
+              {isMsmeMode ? (
+                <>
+                  <Sprout className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-amber-300">🌾 MSME &amp; Rural Producer Mode Active</span>
+                </>
+              ) : (
+                <>
+                  <Leaf className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-emerald-300">Data-Led Packaging Decisions</span>
+                </>
+              )}
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
-              Plan smarter packaging.
-              <br />
-              <span className="text-emerald-300">Simulate the impact.</span>
+              {isMsmeMode ? (
+                <>
+                  Affordable packaging.
+                  <br />
+                  <span className="text-amber-300">Simulate Mandi Impact.</span>
+                </>
+              ) : (
+                <>
+                  Plan smarter packaging.
+                  <br />
+                  <span className="text-emerald-300">Simulate the impact.</span>
+                </>
+              )}
             </h1>
 
             <p className="text-xs sm:text-sm text-emerald-100/80 max-w-xl leading-relaxed">
-              AI-powered decision support for better packaging materials, better shelf life and less food waste.
+              {isMsmeMode
+                ? 'AI & ML decision support for Indian micro-enterprises, cottage food units, and farmers. Cut post-harvest spoilage using low-MOQ, locally available materials and manual heat sealing.'
+                : 'AI-powered decision support for better packaging materials, better shelf life and less food waste.'}
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <button
                 onClick={() => setActiveTab('recommend')}
-                className="inline-flex items-center gap-2 bg-[#2d7a52] hover:bg-[#246644] text-white font-bold text-xs sm:text-sm px-5 py-3 rounded-xl shadow-xs transition-all cursor-pointer transform hover:-translate-y-0.5"
+                className={`inline-flex items-center gap-2 font-bold text-xs sm:text-sm px-5 py-3 rounded-xl shadow-xs transition-all cursor-pointer transform hover:-translate-y-0.5 text-white ${
+                  isMsmeMode ? 'bg-[#2b6b47] hover:bg-[#205537]' : 'bg-[#2d7a52] hover:bg-[#246644]'
+                }`}
               >
                 <ArrowRight className="w-4 h-4" />
-                <span>New recommendation</span>
+                <span>{isMsmeMode ? 'New MSME Recommendation' : 'New recommendation'}</span>
               </button>
 
               <button
@@ -100,14 +130,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white font-bold text-xs sm:text-sm px-5 py-3 rounded-xl border border-white/20 transition-all cursor-pointer transform hover:-translate-y-0.5"
               >
                 <SlidersHorizontal className="w-4 h-4 text-emerald-300" />
-                <span>Try What-If Simulator</span>
+                <span>{isMsmeMode ? 'Try Mandi Simulator' : 'Try What-If Simulator'}</span>
               </button>
             </div>
 
             {/* Footnote */}
             <div className="pt-3 flex items-center gap-2 text-[11px] text-emerald-200/70">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span>AI assists missing inputs · ML provides recommendations · synthetic data</span>
+              <span>
+                {isMsmeMode
+                  ? 'CFTRI & ICAR benchmarks · Low MOQ · Hand-Sealer Compatible · PMFME Subsidy Ready'
+                  : 'AI assists missing inputs · ML provides recommendations · synthetic data'}
+              </span>
             </div>
           </div>
 
@@ -172,52 +206,145 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* 2. 4 Metric Tiles matching image.png */}
+      {/* 2. 4 Metric Tiles (Differentiated for MSME vs Standard) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        {/* Tile 1: Recommendations */}
-        <div className="bg-white rounded-2xl border border-[#e3e8df] p-5 shadow-2xs hover:border-emerald-300 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Recommendations</span>
-            <Package className="w-4 h-4 text-emerald-700" />
-          </div>
-          <div className="text-3xl font-black text-slate-900 mt-2">
-            {recommendationsHistory.length}
-          </div>
-          <div className="text-[11px] text-slate-400 mt-1">Saved in this browser</div>
-        </div>
+        {isMsmeMode ? (
+          <>
+            {/* MSME Tile 1: Avg Small-Batch Cost */}
+            <div className="bg-amber-50/70 rounded-2xl border border-amber-200 p-5 shadow-2xs hover:border-amber-400 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-900">Avg Small Batch Cost</span>
+                <IndianRupee className="w-4 h-4 text-amber-700" />
+              </div>
+              <div className="text-3xl font-black text-amber-950 mt-2">₹2.80</div>
+              <div className="text-[11px] text-amber-800/80 mt-1">Per 500-unit batch run</div>
+            </div>
 
-        {/* Tile 2: Commodities */}
-        <div className="bg-white rounded-2xl border border-[#e3e8df] p-5 shadow-2xs hover:border-emerald-300 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Commodities</span>
-            <Leaf className="w-4 h-4 text-emerald-700" />
-          </div>
-          <div className="text-3xl font-black text-slate-900 mt-2">
-            {COMMODITIES_DATABASE.length}
-          </div>
-          <div className="text-[11px] text-slate-400 mt-1">Workbook vocabulary</div>
-        </div>
+            {/* MSME Tile 2: Hand-Sealer Ready */}
+            <div className="bg-emerald-50/70 rounded-2xl border border-emerald-200 p-5 shadow-2xs hover:border-emerald-400 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-900">Hand-Sealer Ready</span>
+                <ShieldCheck className="w-4 h-4 text-emerald-700" />
+              </div>
+              <div className="text-3xl font-black text-emerald-950 mt-2">92%</div>
+              <div className="text-[11px] text-emerald-800/80 mt-1">Manual impulse compatible</div>
+            </div>
 
-        {/* Tile 3: Material classes */}
-        <div className="bg-white rounded-2xl border border-[#e3e8df] p-5 shadow-2xs hover:border-emerald-300 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Material classes</span>
-            <Layers className="w-4 h-4 text-emerald-700" />
-          </div>
-          <div className="text-3xl font-black text-slate-900 mt-2">13</div>
-          <div className="text-[11px] text-slate-400 mt-1">Synthetic labels</div>
-        </div>
+            {/* MSME Tile 3: Mandi Spoilage Cut */}
+            <div className="bg-teal-50/70 rounded-2xl border border-teal-200 p-5 shadow-2xs hover:border-teal-400 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-teal-900">Mandi Waste Cut</span>
+                <Sprout className="w-4 h-4 text-teal-700" />
+              </div>
+              <div className="text-3xl font-black text-teal-950 mt-2">28.4%</div>
+              <div className="text-[11px] text-teal-800/80 mt-1">Via passive moisture control</div>
+            </div>
 
-        {/* Tile 4: Simulations */}
-        <div className="bg-white rounded-2xl border border-[#e3e8df] p-5 shadow-2xs hover:border-emerald-300 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Simulations</span>
-            <Activity className="w-4 h-4 text-emerald-700" />
-          </div>
-          <div className="text-3xl font-black text-slate-900 mt-2">{simulationCount}</div>
-          <div className="text-[11px] text-slate-400 mt-1">Run in this browser</div>
-        </div>
+            {/* MSME Tile 4: PMFME Subsidy */}
+            <div className="bg-orange-50/70 rounded-2xl border border-orange-200 p-5 shadow-2xs hover:border-orange-400 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-orange-900">Govt Grant Support</span>
+                <Store className="w-4 h-4 text-orange-700" />
+              </div>
+              <div className="text-3xl font-black text-orange-950 mt-2">35%</div>
+              <div className="text-[11px] text-orange-800/80 mt-1">PMFME packaging credit</div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Tile 1: Recommendations */}
+            <div className="bg-white rounded-2xl border border-[#e3e8df] p-5 shadow-2xs hover:border-emerald-300 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500">Recommendations</span>
+                <Package className="w-4 h-4 text-emerald-700" />
+              </div>
+              <div className="text-3xl font-black text-slate-900 mt-2">
+                {recommendationsHistory.length}
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">Saved in this browser</div>
+            </div>
+
+            {/* Tile 2: Commodities */}
+            <div className="bg-white rounded-2xl border border-[#e3e8df] p-5 shadow-2xs hover:border-emerald-300 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500">Commodities</span>
+                <Leaf className="w-4 h-4 text-emerald-700" />
+              </div>
+              <div className="text-3xl font-black text-slate-900 mt-2">
+                {COMMODITIES_DATABASE.length}
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">Workbook vocabulary</div>
+            </div>
+
+            {/* Tile 3: Material classes */}
+            <div className="bg-white rounded-2xl border border-[#e3e8df] p-5 shadow-2xs hover:border-emerald-300 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500">Material classes</span>
+                <Layers className="w-4 h-4 text-emerald-700" />
+              </div>
+              <div className="text-3xl font-black text-slate-900 mt-2">13</div>
+              <div className="text-[11px] text-slate-400 mt-1">Synthetic labels</div>
+            </div>
+
+            {/* Tile 4: Simulations */}
+            <div className="bg-white rounded-2xl border border-[#e3e8df] p-5 shadow-2xs hover:border-emerald-300 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500">Simulations</span>
+                <Activity className="w-4 h-4 text-emerald-700" />
+              </div>
+              <div className="text-3xl font-black text-slate-900 mt-2">{simulationCount}</div>
+              <div className="text-[11px] text-slate-400 mt-1">Run in this browser</div>
+            </div>
+          </>
+        )}
       </div>
+
+      {/* MSME Schemes & Local Sourcing Toolkit (Only in MSME Mode) */}
+      {isMsmeMode && (
+        <div className="bg-gradient-to-r from-amber-50 via-white to-amber-50/70 rounded-2xl border-2 border-amber-300 p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-amber-700 text-white flex items-center justify-center shadow-xs">
+                <Sprout className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-[10px] font-extrabold text-amber-800 uppercase tracking-wider block">
+                  MSME &amp; Smallholder Toolkit
+                </span>
+                <h3 className="text-sm font-black text-slate-900">
+                  Government Schemes &amp; Low-MOQ Sourcing Guide
+                </h3>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full">
+              Farmer / Cottage Ready
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="p-3.5 bg-white rounded-xl border border-amber-200/90 space-y-1">
+              <span className="font-extrabold text-amber-950 block">PMFME Capital Subsidy (MoFPI)</span>
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                Eligible for <strong>35% credit-linked capital subsidy</strong> (up to ₹10 Lakhs) on food packaging, sealing, and grading machines.
+              </p>
+            </div>
+
+            <div className="p-3.5 bg-white rounded-xl border border-amber-200/90 space-y-1">
+              <span className="font-extrabold text-amber-950 block">Plastic Waste Rules 2022</span>
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                Small units can legally use <strong>compostable IS/ISO 17088 certified films</strong> or &gt;120µm reusable bags exempt from single-use plastic bans.
+              </p>
+            </div>
+
+            <div className="p-3.5 bg-white rounded-xl border border-amber-200/90 space-y-1">
+              <span className="font-extrabold text-amber-950 block">Low-MOQ Packaging Hubs</span>
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                Source off-the-shelf stand-up pouches in packs of 500 from wholesale mandis (Sadar Bazar, APMC Vashi, Crawford Market) without cylinder fees.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 3. Middle Row: Model Quality Holdout & Latest Recommendation */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">

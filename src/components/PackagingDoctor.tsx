@@ -21,42 +21,81 @@ interface PackagingDoctorProps {
   isMsmeMode: boolean;
 }
 
-const PRESET_SYMPTOMS = [
+const MSME_PRESET_SYMPTOMS = [
   {
-    title: 'Chips are becoming soggy',
-    desc: 'Fried crispy chips lose crunch after 2 weeks on the shelf',
-    commodity: 'Fried Potato Chips',
-    packaging: 'BOPP Monolayer pouch',
+    title: 'Hand heat sealer burns / leaves pinholes in pouch',
+    desc: 'Pedal / impulse hand sealer melts the plastic unevenly, causing micro-leaks and air entry',
+    commodity: 'Ground Spices / Masala',
+    packaging: 'Single-layer LDPE pouch (40µm)',
   },
   {
-    title: 'Tomatoes spoil quickly and rot',
-    desc: 'Fresh tomatoes develop white mold and sweat inside the packet',
+    title: 'Oil from fried namkeen stains paper packet',
+    desc: 'Cooking oil penetrates through the paper bag, causing greasy patches and rancid smell',
+    commodity: 'Fried Namkeen / Bhujia',
+    packaging: 'Standard unlined Kraft paper packet',
+  },
+  {
+    title: 'Fresh tomatoes rot & sweat in plastic bags',
+    desc: 'Heavy water droplets accumulate inside unventilated plastic bag during tempo transit to mandi',
     commodity: 'Fresh Tomatoes',
-    packaging: 'Standard sealed LDPE bag',
+    packaging: 'Unperforated Polyethylene bag',
   },
   {
-    title: 'Moisture condensing inside packet',
-    desc: 'Heavy droplets form on film walls, causing water pooling on produce',
-    commodity: 'Baby Spinach Leaves',
-    packaging: 'Sealed Polypropylene film',
+    title: 'Jute grain bags absorb moisture in monsoon godown',
+    desc: 'Wheat and pulses develop musty mold and fungal growth due to damp warehouse floor and humidity',
+    commodity: 'Whole Wheat / Grains',
+    packaging: 'Traditional Gunny / Jute sack',
   },
   {
-    title: 'Fresh paneer turns sour & slimy',
-    desc: 'Cottage cheese shows yellowish discoloration and whey separation after 4 days',
+    title: 'Ground turmeric / chili powder cakes into hard lumps',
+    desc: 'Spices lose pungency and form hard rocky lumps after 3 weeks of storage on retail shelf',
+    commodity: 'Chili & Turmeric Powder',
+    packaging: 'Standard transparent PP pouch',
+  },
+  {
+    title: 'Pickle oil leaks through container lid during transport',
+    desc: 'Mustard oil leaks around threaded plastic jar cap during bumpy rural road transport',
+    commodity: 'Mango Pickle in Mustard Oil',
+    packaging: 'Plastic screw-top PET jar without induction seal',
+  },
+];
+
+const ENTERPRISE_PRESET_SYMPTOMS = [
+  {
+    title: 'High-speed FFS seal jaw delamination at 140 bpm',
+    desc: 'Sealing jaws produce micro-channels and inconsistent peel strength under rapid cycle times',
+    commodity: 'Extruded Snack Pellets',
+    packaging: 'Multi-layer BOPP/Met-BOPP/PE laminate',
+  },
+  {
+    title: 'Modified Atmosphere Headspace O₂ rises > 0.8%',
+    desc: 'Residual oxygen levels increase from 0.2% to 1.1% over 45 days in distribution warehouse',
+    commodity: 'Sliced Cooked Meats',
+    packaging: 'Thermoformed EVOH high-barrier tray',
+  },
+  {
+    title: 'Micro-pinholing during sub-zero cold chain distribution',
+    desc: 'Film embrittlement and flex-cracking at -18°C causes vacuum loss and freezer burn',
+    commodity: 'Frozen Green Peas',
+    packaging: 'Co-extruded LLDPE/Metallocene pouch',
+  },
+  {
+    title: 'Flex-crack fatigue in multi-modal export container',
+    desc: 'Barrier metallization fractures during 28-day ocean freight vibration, degrading WVTR',
+    commodity: 'Roasted Coffee Beans',
+    packaging: 'Tri-laminate PET/Alu-Foil/PE pouch with degassing valve',
+  },
+  {
+    title: 'Moisture ingress causes loss of crispness',
+    desc: 'Potato chips exceed 2.5% critical water activity threshold after 60 days on shelf',
+    commodity: 'Fried Potato Chips',
+    packaging: 'Metallized BOPP laminate with cold-seal adhesive',
+  },
+  {
+    title: 'Fresh paneer develops sour off-notes & whey separation',
+    desc: 'Psychrotrophic bacterial growth and moisture weeping observed under 4°C chilled display',
     commodity: 'Fresh Dairy Paneer',
-    packaging: 'Standard vacuum bag at 6°C',
-  },
-  {
-    title: 'Packet seal leaks during transit',
-    desc: 'Seams burst open during mountain/high-altitude road transport',
-    commodity: 'Puffed Snacks / Namkeen',
-    packaging: 'Multi-layer laminated pouch',
-  },
-  {
-    title: 'Product becomes brittle / oxidized',
-    desc: 'Almonds and nuts taste rancid and stale after 1 month',
-    commodity: 'Roasted Raw Almonds',
-    packaging: 'Transparent PET pouch',
+    packaging: 'PA/PE barrier vacuum pouch',
   },
 ];
 
@@ -68,6 +107,8 @@ export const PackagingDoctor: React.FC<PackagingDoctorProps> = ({ isMsmeMode }) 
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [diagnosis, setDiagnosis] = useState<PackagingDiagnosis | null>(null);
+
+  const activePresets = isMsmeMode ? MSME_PRESET_SYMPTOMS : ENTERPRISE_PRESET_SYMPTOMS;
 
   const handleDiagnose = async (textToDiagnose?: string, comm?: string, pack?: string) => {
     const query = textToDiagnose || problemText;
@@ -95,22 +136,36 @@ export const PackagingDoctor: React.FC<PackagingDoctorProps> = ({ isMsmeMode }) 
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
       {/* Clinic Header */}
       <div className="bg-gradient-to-r from-teal-900 to-emerald-900 text-white rounded-2xl p-6 md:p-8 shadow-sm">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-lg bg-teal-800 text-teal-200 flex items-center justify-center">
-            <Stethoscope className="w-5 h-5" />
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-teal-800 text-teal-200 flex items-center justify-center">
+              <Stethoscope className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-bold text-teal-200 uppercase tracking-wider">
+              Packaging Doctor Diagnostic Clinic
+            </span>
           </div>
-          <span className="text-xs font-bold text-teal-200 uppercase tracking-wider">
-            Packaging Doctor Diagnostic Clinic
+
+          <span
+            className={`text-xs font-black px-3 py-1 rounded-full border ${
+              isMsmeMode
+                ? 'bg-amber-400/20 text-amber-300 border-amber-400/40'
+                : 'bg-teal-400/20 text-teal-300 border-teal-400/40'
+            }`}
+          >
+            {isMsmeMode ? '🌾 MSME & Cottage Producer Clinic Active' : '🏭 Enterprise Industrial QA Clinic Active'}
           </span>
         </div>
 
         <h1 className="text-2xl md:text-4xl font-extrabold text-white mb-2">
-          Diagnose Food Packaging Failures
+          {isMsmeMode
+            ? 'Diagnose Small Batch & Farm Packaging Failures'
+            : 'Diagnose Industrial Food Packaging Failures'}
         </h1>
         <p className="text-xs md:text-sm text-teal-100/90 max-w-2xl leading-relaxed">
-          Describe any quality loss, seal failure, moisture ingress, or premature spoilage.
-          Our diagnostic engine analyzes the biochemical root-cause, flags the critical packaging parameter,
-          and prescribes upgraded material structures.
+          {isMsmeMode
+            ? 'Solve seal burns, damp storage, bag tears, and road transit damage using affordable, locally accessible materials and manual heat sealing remedies without expensive machinery.'
+            : 'Describe any quality loss, seal failure, moisture ingress, or premature spoilage. Our diagnostic engine analyzes biochemical root-causes, flags critical ASTM parameters, and prescribes multi-layer material upgrades.'}
         </p>
       </div>
 
@@ -119,13 +174,17 @@ export const PackagingDoctor: React.FC<PackagingDoctorProps> = ({ isMsmeMode }) 
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
-            <span>Common Spoilage Symptoms (Click to Diagnose):</span>
+            <span>
+              {isMsmeMode
+                ? '🌾 Common MSME & Mandi Spoilage Failures (Click to Diagnose):'
+                : '🏭 Common Industrial & Cold-Chain Failures (Click to Diagnose):'}
+            </span>
           </span>
           <span className="text-[10px] text-slate-400">One-click failure analysis</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          {PRESET_SYMPTOMS.map((preset, i) => (
+          {activePresets.map((preset, i) => (
             <button
               key={i}
               onClick={() => selectPreset(preset)}
@@ -331,14 +390,60 @@ export const PackagingDoctor: React.FC<PackagingDoctorProps> = ({ isMsmeMode }) 
             </div>
           )}
 
-          {/* Small Farmer / MSME Actionable Tip */}
-          <div className="p-4 rounded-xl border border-amber-300 bg-amber-50/80 flex items-start gap-3">
-            <Sprout className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div className="text-xs text-amber-950 space-y-1">
-              <span className="font-bold">Small Producer / MSME Tip (No Jargon):</span>
-              <p className="leading-relaxed">{diagnosis.msmeFarmerTip}</p>
+          {/* Conditional Guidance: MSME Mode vs Enterprise Mode */}
+          {isMsmeMode ? (
+            <div className="p-4 rounded-xl border-2 border-amber-400 bg-amber-50/90 flex items-start gap-3 shadow-xs">
+              <Sprout className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+              <div className="text-xs text-amber-950 space-y-1.5 flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-xs uppercase tracking-wide text-amber-900">
+                    🌾 Small Producer & MSME Action Plan (No Jargon, Low-Cost):
+                  </span>
+                  <span className="text-[10px] bg-amber-200 text-amber-900 font-extrabold px-2 py-0.5 rounded-full">
+                    MSME Priority
+                  </span>
+                </div>
+                <p className="leading-relaxed font-medium">{diagnosis.msmeFarmerTip}</p>
+                <div className="pt-1.5 border-t border-amber-200/80 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-amber-900">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                    <span><strong>Manual Sealer Tip:</strong> Keep heat dial at 3-4; hold clamped for 1.5s after light turns off.</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                    <span><strong>Budget Moisture Control:</strong> Add 2g food-grade silica pouch (₹1.20) inside pack.</span>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-4 rounded-xl border-2 border-slate-300 bg-slate-900 text-white flex items-start gap-3 shadow-xs">
+              <Layers className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
+              <div className="text-xs space-y-1.5 flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-xs uppercase tracking-wide text-teal-300">
+                    🏭 Industrial & Enterprise QA Engineering Protocol:
+                  </span>
+                  <span className="text-[10px] bg-teal-800 text-teal-200 font-extrabold px-2 py-0.5 rounded-full">
+                    Enterprise SOP
+                  </span>
+                </div>
+                <p className="text-slate-300 leading-relaxed font-medium">
+                  Verify automated seal integrity via <strong>ASTM F88</strong> (peel strength &gt; 18 N/15mm) and <strong>ASTM F2096</strong> (gross leak bubble emission). For barrier validation, log MOCON OTR &amp; WVTR across production lots.
+                </p>
+                <div className="pt-1.5 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-300">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-400"></span>
+                    <span><strong>In-line QA:</strong> Calibrate FFS rotary jaw temperature to 145°C ±2°C with 0.35s dwell time.</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-400"></span>
+                    <span><strong>Headspace Control:</strong> Target residual O₂ &lt; 0.5% with certified food-grade N₂ flush (E941).</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

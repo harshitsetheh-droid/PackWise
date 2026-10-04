@@ -21,6 +21,7 @@ import {
   ChevronDown,
   Loader2,
   Check,
+  Sprout,
 } from 'lucide-react';
 import { UserInputConditions, MLRecommendation, StorageType, Commodity, FoodCategory, RespirationRate } from '../types/packaging';
 import { runWhatIfSimulation } from '../ml/engine';
@@ -210,18 +211,26 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
     )
   );
 
-  // Quick Preset Scenarios
-  const applyPreset = (preset: 'heatwave' | 'transit' | 'extended_shelf' | 'monsoon') => {
-    if (preset === 'heatwave') {
-      setSimTemp(Math.min(38, baseConditions.storage_temperature_C + 18));
+  // Quick Preset Scenarios (Differentiated for MSME vs Enterprise)
+  const applyPreset = (preset: 'heatwave' | 'transit' | 'extended_shelf' | 'monsoon' | 'mandi_transit' | 'monsoon_godown' | 'low_moq_pouch' | 'summer_harvest') => {
+    if (preset === 'heatwave' || preset === 'summer_harvest') {
+      setSimTemp(Math.min(42, Math.max(38, baseConditions.storage_temperature_C + 16)));
       setSimStorageType('Ambient');
-    } else if (preset === 'transit') {
-      setSimTransit(Math.min(12, baseConditions.transportation_duration_days + 6));
+    } else if (preset === 'transit' || preset === 'mandi_transit') {
+      setSimTransit(preset === 'mandi_transit' ? 3 : Math.min(12, baseConditions.transportation_duration_days + 6));
+      if (preset === 'mandi_transit') {
+        setSimTemp(Math.max(34, baseConditions.storage_temperature_C));
+        setSimStorageType('Ambient');
+      }
     } else if (preset === 'extended_shelf') {
       setSimShelfLife(Math.min(365, baseConditions.desired_shelf_life_days * 2.5));
-    } else if (preset === 'monsoon') {
-      setSimRh(96);
-      setSimTemp(Math.max(28, baseConditions.storage_temperature_C));
+    } else if (preset === 'monsoon' || preset === 'monsoon_godown') {
+      setSimRh(95);
+      setSimTemp(Math.max(30, baseConditions.storage_temperature_C));
+    } else if (preset === 'low_moq_pouch') {
+      setSimThickness(50);
+      setSimAtmosphere('ambient');
+      setSimStorageType('Ambient');
     }
   };
 
@@ -241,17 +250,28 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
       <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-900 font-extrabold text-xs px-3 py-1 rounded-full border border-emerald-300 mb-2">
-              <Zap className="w-3.5 h-3.5 text-emerald-700" />
-              <span>PRIMARY PRODUCT USP</span>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-900 font-extrabold text-xs px-3 py-1 rounded-full border border-emerald-300">
+                <Zap className="w-3.5 h-3.5 text-emerald-700" />
+                <span>PRIMARY PRODUCT USP</span>
+              </div>
+              <span
+                className={`text-xs font-black px-3 py-1 rounded-full border ${
+                  isMsmeMode
+                    ? 'bg-amber-100 text-amber-900 border-amber-300'
+                    : 'bg-slate-100 text-slate-700 border-slate-300'
+                }`}
+              >
+                {isMsmeMode ? '🌾 MSME & Mandi Fast-Track Active' : '🏭 Enterprise Industrial Mode Active'}
+              </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black text-slate-900">
-              What-If Packaging Simulator
+              {isMsmeMode ? 'MSME & Farmer What-If Packaging Simulator' : 'What-If Packaging Simulator'}
             </h1>
             <p className="text-xs md:text-sm text-slate-500 mt-1 max-w-2xl">
-              Modify real-world storage temperature, transit logistics, and shelf-life requirements.
-              The exact same 8-task ML recommendation engine re-evaluates the food kinetics and displays
-              detailed specification deltas.
+              {isMsmeMode
+                ? 'Stress-test real rural logistics: uncooled tempo transit, humid monsoon godowns, and manual heat sealing to find affordable, low-MOQ packaging that prevents crop spoilage.'
+                : 'Modify real-world storage temperature, transit logistics, and shelf-life requirements. The exact same 8-task ML recommendation engine re-evaluates the food kinetics and displays detailed specification deltas.'}
             </p>
           </div>
 
@@ -436,40 +456,79 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
       </div>
 
       {/* Preset Stress Scenarios Bar */}
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+      <div className={`border rounded-xl p-4 flex flex-wrap items-center justify-between gap-3 ${
+        isMsmeMode ? 'bg-amber-50/60 border-amber-200' : 'bg-slate-50 border-slate-200'
+      }`}>
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-emerald-700" />
-          <span className="text-xs font-bold text-slate-800">Quick Test Stress Scenarios:</span>
+          <Sparkles className={`w-4 h-4 ${isMsmeMode ? 'text-amber-700' : 'text-emerald-700'}`} />
+          <span className="text-xs font-bold text-slate-800">
+            {isMsmeMode ? '🌾 MSME & Rural Stress Scenarios:' : '🏭 Industrial Stress Scenarios:'}
+          </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => applyPreset('heatwave')}
-            className="text-xs font-semibold bg-white hover:bg-rose-50 text-rose-800 border border-rose-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
-          >
-            <Thermometer className="w-3.5 h-3.5 text-rose-500" />
-            <span>Heatwave Break (+18°C)</span>
-          </button>
-          <button
-            onClick={() => applyPreset('transit')}
-            className="text-xs font-semibold bg-white hover:bg-amber-50 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
-          >
-            <Truck className="w-3.5 h-3.5 text-amber-600" />
-            <span>Extended Export (+6d Transit)</span>
-          </button>
-          <button
-            onClick={() => applyPreset('extended_shelf')}
-            className="text-xs font-semibold bg-white hover:bg-emerald-50 text-emerald-900 border border-emerald-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
-          >
-            <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-            <span>2.5× Shelf-Life Target</span>
-          </button>
-          <button
-            onClick={() => applyPreset('monsoon')}
-            className="text-xs font-semibold bg-white hover:bg-blue-50 text-blue-900 border border-blue-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
-          >
-            <Droplets className="w-3.5 h-3.5 text-blue-500" />
-            <span>Monsoon Humidity (96% RH)</span>
-          </button>
+          {isMsmeMode ? (
+            <>
+              <button
+                onClick={() => applyPreset('mandi_transit')}
+                className="text-xs font-semibold bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
+              >
+                <Truck className="w-3.5 h-3.5 text-amber-600" />
+                <span>Rural Mandi Transit (Uncooled Tempo, 38°C)</span>
+              </button>
+              <button
+                onClick={() => applyPreset('monsoon_godown')}
+                className="text-xs font-semibold bg-white hover:bg-blue-50 text-blue-900 border border-blue-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
+              >
+                <Droplets className="w-3.5 h-3.5 text-blue-600" />
+                <span>Monsoon Farm Godown (95% RH)</span>
+              </button>
+              <button
+                onClick={() => applyPreset('low_moq_pouch')}
+                className="text-xs font-semibold bg-white hover:bg-emerald-50 text-emerald-900 border border-emerald-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
+              >
+                <Layers className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Low-MOQ Pouch (50µm Hand-Sealed)</span>
+              </button>
+              <button
+                onClick={() => applyPreset('summer_harvest')}
+                className="text-xs font-semibold bg-white hover:bg-rose-50 text-rose-900 border border-rose-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
+              >
+                <Thermometer className="w-3.5 h-3.5 text-rose-600" />
+                <span>Peak Summer Harvest (42°C)</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => applyPreset('heatwave')}
+                className="text-xs font-semibold bg-white hover:bg-rose-50 text-rose-800 border border-rose-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <Thermometer className="w-3.5 h-3.5 text-rose-500" />
+                <span>Heatwave Break (+18°C)</span>
+              </button>
+              <button
+                onClick={() => applyPreset('transit')}
+                className="text-xs font-semibold bg-white hover:bg-amber-50 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <Truck className="w-3.5 h-3.5 text-amber-600" />
+                <span>Extended Export (+6d Transit)</span>
+              </button>
+              <button
+                onClick={() => applyPreset('extended_shelf')}
+                className="text-xs font-semibold bg-white hover:bg-emerald-50 text-emerald-900 border border-emerald-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                <span>2.5× Shelf-Life Target</span>
+              </button>
+              <button
+                onClick={() => applyPreset('monsoon')}
+                className="text-xs font-semibold bg-white hover:bg-blue-50 text-blue-900 border border-blue-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <Droplets className="w-3.5 h-3.5 text-blue-500" />
+                <span>Monsoon Humidity (96% RH)</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -699,6 +758,19 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
                 Active MAP (N₂/CO₂)
               </button>
             </div>
+
+            {/* MSME Atmosphere Warning */}
+            {isMsmeMode && simAtmosphere !== 'ambient' && (
+              <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-300 text-[11px] text-amber-950 space-y-1 mt-1">
+                <span className="font-bold flex items-center gap-1 text-amber-900">
+                  <AlertTriangle className="w-3 h-3 text-amber-600" />
+                  <span>Small Scale Feasibility Notice:</span>
+                </span>
+                <p>
+                  Industrial N₂/MAP flushing machinery costs ₹4.5L – ₹14L. For cottage batches, use a <strong>tabletop chamber vacuum sealer (₹6,500)</strong> with <strong>food-grade oxygen absorber sachets (₹1.20/pouch)</strong> for equivalent barrier longevity.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -972,6 +1044,98 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Differentiated Impact Card: MSME Mode vs Industrial Enterprise Mode */}
+          {isMsmeMode ? (
+            <div className="bg-gradient-to-br from-amber-50/90 via-orange-50/50 to-amber-50/90 rounded-2xl border-2 border-amber-300 p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sprout className="w-5 h-5 text-amber-700" />
+                  <h4 className="text-sm font-black text-amber-950 uppercase tracking-wide">
+                    🌾 MSME Batch Economics & Equipment Feasibility
+                  </h4>
+                </div>
+                <span className="text-[10px] font-extrabold bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full">
+                  Small Scale Focus
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-3 bg-white/90 rounded-xl border border-amber-200">
+                  <span className="text-[10px] text-amber-800 font-bold uppercase block">Batch Cost (500 pouches)</span>
+                  <div className="text-base font-black text-amber-950 mt-0.5">
+                    ₹{Math.round(500 * (0.045 * (simThickness / 50) * 83))}
+                  </div>
+                  <span className="text-[10px] text-amber-700">~₹{(0.045 * (simThickness / 50) * 83).toFixed(2)} per pouch</span>
+                </div>
+
+                <div className="p-3 bg-white/90 rounded-xl border border-amber-200">
+                  <span className="text-[10px] text-amber-800 font-bold uppercase block">Machinery Requirement</span>
+                  <div className="text-xs font-bold text-emerald-900 mt-1">
+                    ✓ Hand/Pedal Impulse Sealer
+                  </div>
+                  <span className="text-[10px] text-slate-500">₹1,800 – ₹3,500 investment</span>
+                </div>
+
+                <div className="p-3 bg-white/90 rounded-xl border border-amber-200">
+                  <span className="text-[10px] text-amber-800 font-bold uppercase block">Govt Subsidy Scheme</span>
+                  <div className="text-xs font-bold text-amber-900 mt-1">
+                    PMFME 35% Subsidy
+                  </div>
+                  <span className="text-[10px] text-slate-500">MoFPI micro-enterprise grant</span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-white/70 rounded-xl border border-amber-200/80 text-[11px] text-amber-950 space-y-1">
+                <span className="font-bold flex items-center gap-1">
+                  <span>💡 Rural Mandi Advice:</span>
+                </span>
+                <p>
+                  At simulated temperature of <strong>{simTemp}°C</strong> and transit of <strong>{simTransit} days</strong>, if commercial cold storage is unavailable in your mandi, use <strong>Zero Energy Cool Chambers (ZECC)</strong> or moist jute coverings during road transit to passively reduce temperature by 8°C–12°C.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-slate-900 text-white rounded-2xl border border-slate-700 p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-teal-400" />
+                  <h4 className="text-sm font-black text-white uppercase tracking-wide">
+                    🏭 Industrial Packaging Line & Global Cold-Chain Metrics
+                  </h4>
+                </div>
+                <span className="text-[10px] font-extrabold bg-teal-800 text-teal-200 px-2.5 py-0.5 rounded-full">
+                  High-Speed Automation
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-3 bg-slate-800 rounded-xl border border-slate-700">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Packaging Line Throughput</span>
+                  <div className="text-base font-black text-teal-300 mt-0.5">
+                    140 - 180 bpm
+                  </div>
+                  <span className="text-[10px] text-slate-400">Rotary continuous sealing</span>
+                </div>
+
+                <div className="p-3 bg-slate-800 rounded-xl border border-slate-700">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Compliance Standard</span>
+                  <div className="text-xs font-bold text-slate-200 mt-1">
+                    ASTM F88 / F1249 / F2096
+                  </div>
+                  <span className="text-[10px] text-slate-400">US-FDA 21 CFR 177</span>
+                </div>
+
+                <div className="p-3 bg-slate-800 rounded-xl border border-slate-700">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Container Freight Factor</span>
+                  <div className="text-xs font-bold text-slate-200 mt-1">
+                    Reefer ISO 40ft (TEU)
+                  </div>
+                  <span className="text-[10px] text-slate-400">Temperature logged via RFID</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

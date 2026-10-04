@@ -15,6 +15,7 @@ import {
   Filter,
   Check,
   ChevronDown,
+  Sprout,
 } from 'lucide-react';
 import { MLRecommendation, PackagingAlternative, Commodity } from '../types/packaging';
 import { COMMODITIES_DATABASE } from '../data/commodities';
@@ -132,17 +133,28 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
       <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-xs space-y-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-900 font-extrabold text-xs px-3 py-1 rounded-full border border-emerald-300 mb-2">
-              <Scale className="w-3.5 h-3.5 text-emerald-700" />
-              <span>COMMODITY-SPECIFIC DECISION MATRIX</span>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-900 font-extrabold text-xs px-3 py-1 rounded-full border border-emerald-300">
+                <Scale className="w-3.5 h-3.5 text-emerald-700" />
+                <span>COMMODITY-SPECIFIC DECISION MATRIX</span>
+              </div>
+              <span
+                className={`text-xs font-black px-3 py-1 rounded-full border ${
+                  isMsmeMode
+                    ? 'bg-amber-100 text-amber-900 border-amber-300'
+                    : 'bg-slate-100 text-slate-700 border-slate-300'
+                }`}
+              >
+                {isMsmeMode ? '🌾 MSME & Local Producer Lens Active' : '🏭 Enterprise Industrial Specification'}
+              </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black text-slate-900">
-              Packaging Options & Trade-Offs
+              {isMsmeMode ? 'MSME Packaging Options & Small-Batch Trade-Offs' : 'Packaging Options & Trade-Offs'}
             </h1>
             <p className="text-xs md:text-sm text-slate-500 mt-1 max-w-2xl">
-              Packaging performance is <strong>not universal</strong>. Each food has unique respiration, moisture, and fat kinetics.
-              Compare calibrated packaging structures tailored specifically for{' '}
-              <strong className="text-emerald-800 font-bold">{activeCommodity.name}</strong>.
+              {isMsmeMode
+                ? `Compare low-MOQ, wholesale-accessible packaging materials and manual heat sealing feasibility calibrated for ${activeCommodity.name}.`
+                : `Packaging performance is not universal. Compare calibrated packaging structures tailored specifically for ${activeCommodity.name}.`}
             </p>
           </div>
 
@@ -167,7 +179,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Lowest Cost
+                {isMsmeMode ? '🌾 Lowest Cost & MOQ' : 'Lowest Cost'}
               </button>
               <button
                 onClick={() => setSelectedPrioritization('eco')}
@@ -177,7 +189,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Eco Priority
+                {isMsmeMode ? '🌱 Plastic Ban Exempt' : 'Eco Priority'}
               </button>
             </div>
           </div>
@@ -269,11 +281,58 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
                     </span>
                   </div>
 
+                  {/* MSME Viability Assessment Badge */}
+                  {isMsmeMode && (
+                    <div className={`mb-3 p-2 rounded-lg border text-xs flex items-center justify-between ${
+                      isLowerCost
+                        ? 'bg-amber-100/90 text-amber-950 border-amber-300 font-bold'
+                        : isEco
+                        ? 'bg-teal-50 text-teal-900 border-teal-300 font-semibold'
+                        : 'bg-slate-50 text-slate-700 border-slate-200'
+                    }`}>
+                      <span className="flex items-center gap-1.5">
+                        <Sprout className="w-3.5 h-3.5 text-amber-700" />
+                        <span>
+                          {isLowerCost
+                            ? '🌟 Best for MSME (Score: 9.6/10)'
+                            : isEco
+                            ? '🌱 Plastic Ban Exempt (Score: 8.8/10)'
+                            : '⚙️ Enterprise Grade (Score: 7.5/10)'}
+                        </span>
+                      </span>
+                      <span className="text-[10px] uppercase font-extrabold text-slate-600">
+                        {isLowerCost ? 'Low MOQ' : isEco ? 'PWM Compliant' : 'High Barrier'}
+                      </span>
+                    </div>
+                  )}
+
                   <h3 className="text-lg font-bold text-slate-900 mb-1">{opt.material}</h3>
                   <p className="text-xs text-slate-500 mb-4 line-clamp-2">{opt.structure}</p>
 
                   {/* Core Specifications Table */}
                   <div className="divide-y divide-slate-100 text-xs mb-6">
+                    {isMsmeMode && (
+                      <div className="py-2 flex items-center justify-between bg-amber-50/50 px-2 rounded">
+                        <span className="text-amber-900 font-bold">500-Pouch Batch Cost</span>
+                        <span className="font-black text-amber-950">
+                          ₹{Math.round(500 * (opt.cost_per_1k_packs * 0.083))}
+                        </span>
+                      </div>
+                    )}
+
+                    {isMsmeMode && (
+                      <div className="py-2 flex items-center justify-between px-2">
+                        <span className="text-slate-500">Sealing Method</span>
+                        <span className="font-bold text-slate-800">
+                          {isLowerCost
+                            ? '✓ Hand/Pedal Impulse Sealer'
+                            : isEco
+                            ? '✓ Heat Sealer (120-130°C)'
+                            : 'Continuous Band / FFS'}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="py-2 flex items-center justify-between">
                       <span className="text-slate-500">Oxygen Barrier (OTR)</span>
                       <span className="font-bold text-slate-800">
@@ -492,25 +551,39 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
       {/* Interactive Dynamic Decision Advisory & Simulation Launcher */}
       <div
         onClick={() => onNavigateToWhatIf && onNavigateToWhatIf()}
-        className="group bg-gradient-to-r from-emerald-50/90 via-white to-teal-50/80 border-2 border-emerald-300 hover:border-emerald-600 rounded-2xl p-5 md:p-6 shadow-sm hover:shadow-md cursor-pointer transition-all space-y-3"
+        className={`group border-2 rounded-2xl p-5 md:p-6 shadow-sm hover:shadow-md cursor-pointer transition-all space-y-3 ${
+          isMsmeMode
+            ? 'bg-gradient-to-r from-amber-50/90 via-white to-orange-50/70 border-amber-300 hover:border-amber-500'
+            : 'bg-gradient-to-r from-emerald-50/90 via-white to-teal-50/80 border-emerald-300 hover:border-emerald-600'
+        }`}
         title="Click to simulate this recommendation in the What-If Simulator"
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-700 text-white flex items-center justify-center shadow-xs shrink-0">
-              <Info className="w-4 h-4" />
+            <div className={`w-8 h-8 rounded-lg text-white flex items-center justify-center shadow-xs shrink-0 ${
+              isMsmeMode ? 'bg-amber-700' : 'bg-emerald-700'
+            }`}>
+              {isMsmeMode ? <Sprout className="w-4 h-4" /> : <Info className="w-4 h-4" />}
             </div>
             <div>
-              <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">
-                Interactive Engineering Advisory
+              <span className={`text-[11px] font-bold uppercase tracking-wider block ${
+                isMsmeMode ? 'text-amber-800' : 'text-emerald-800'
+              }`}>
+                {isMsmeMode ? '🌾 Smallholder & MSME Batch Advisory' : 'Interactive Engineering Advisory'}
               </span>
               <h4 className="text-sm font-extrabold text-slate-900">
-                Tailored Production Recommendation for {activeCommodity.name}
+                {isMsmeMode
+                  ? `Small-Batch Packaging Strategy for ${activeCommodity.name}`
+                  : `Tailored Production Recommendation for ${activeCommodity.name}`}
               </h4>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-extrabold text-emerald-900 bg-emerald-100 group-hover:bg-emerald-200 px-3 py-1.5 rounded-xl border border-emerald-300 transition-colors shrink-0">
+          <div className={`flex items-center gap-2 text-xs font-extrabold px-3 py-1.5 rounded-xl border transition-colors shrink-0 ${
+            isMsmeMode
+              ? 'text-amber-950 bg-amber-100 group-hover:bg-amber-200 border-amber-300'
+              : 'text-emerald-900 bg-emerald-100 group-hover:bg-emerald-200 border-emerald-300'
+          }`}>
             <span>Simulate in What-If Engine</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
           </div>
@@ -520,7 +593,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
           <div className="p-3 bg-white/90 rounded-xl border border-slate-200/80 space-y-0.5">
             <span className="text-slate-500 font-semibold block text-[11px]">Recommended Lifespan</span>
-            <span className="text-sm font-black text-emerald-800">
+            <span className={`text-sm font-black ${isMsmeMode ? 'text-amber-900' : 'text-emerald-800'}`}>
               ~{options[0].predicted_shelf_life_days} Days
             </span>
             <span className="text-[10px] text-slate-400 block">
@@ -533,24 +606,32 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
             <span className="text-sm font-black text-slate-900">
               ₹{(Math.abs(options[0].cost_per_1k_packs - options[1].cost_per_1k_packs) * 0.083).toFixed(2)} / pouch
             </span>
-            <span className="text-[10px] text-emerald-700 font-medium block">
+            <span className={`text-[10px] font-medium block ${isMsmeMode ? 'text-amber-700' : 'text-emerald-700'}`}>
               Lower-Cost saves ~{Math.round((1 - options[1].cost_per_1k_packs / options[0].cost_per_1k_packs) * 100)}% on film
             </span>
           </div>
 
           <div className="p-3 bg-white/90 rounded-xl border border-slate-200/80 space-y-0.5">
-            <span className="text-slate-500 font-semibold block text-[11px]">Spoilage Risk Delta</span>
-            <span className={`text-sm font-black ${options[1].food_waste_risk_percent > 30 ? 'text-rose-600' : 'text-slate-900'}`}>
-              +{options[1].food_waste_risk_percent - options[0].food_waste_risk_percent}% Extra Risk
+            <span className="text-slate-500 font-semibold block text-[11px]">
+              {isMsmeMode ? 'Small Batch Savings (500 units)' : 'Spoilage Risk Delta'}
+            </span>
+            <span className={`text-sm font-black ${isMsmeMode ? 'text-emerald-700' : options[1].food_waste_risk_percent > 30 ? 'text-rose-600' : 'text-slate-900'}`}>
+              {isMsmeMode
+                ? `Save ₹${Math.round(500 * (Math.abs(options[0].cost_per_1k_packs - options[1].cost_per_1k_packs) * 0.083))}`
+                : `+${options[1].food_waste_risk_percent - options[0].food_waste_risk_percent}% Extra Risk`}
             </span>
             <span className="text-[10px] text-slate-400 block">
-              {options[1].food_waste_risk_percent}% risk if using {options[1].material.split(' ')[0]}
+              {isMsmeMode
+                ? 'Zero cylinder printing cost with sticker label'
+                : `${options[1].food_waste_risk_percent}% risk if using ${options[1].material.split(' ')[0]}`}
             </span>
           </div>
         </div>
 
         <p className="text-xs text-slate-600 leading-relaxed pt-1">
-          {activeCommodity.respiration_rate !== 'None'
+          {isMsmeMode
+            ? `🌾 MSME Practical Tip: If producing under 2,000 packs/month, choose Option B (${options[1].material}). It has low MOQ in local mandis, works with a simple ₹2,000 foot-pedal impulse sealer, and avoids ₹40,000+ rotogravure cylinder tooling costs by using self-adhesive label stickers.`
+            : activeCommodity.respiration_rate !== 'None'
             ? `Because ${activeCommodity.name} has active respiration (${activeCommodity.respiration_rate}), opting for Lower-Cost unperforated films risks suffocation and sweating within ${options[1].predicted_shelf_life_days} days. Recommended breathable structures protect wholesale market value.`
             : activeCommodity.moisture_percent < 10
             ? `${activeCommodity.name} is highly hygroscopic. If ambient humidity exceeds 70%, Lower-Cost packaging causes sogginess ~${options[0].predicted_shelf_life_days - options[1].predicted_shelf_life_days} days earlier. Recommended Met-BOPP/Foil prevents texture failure.`

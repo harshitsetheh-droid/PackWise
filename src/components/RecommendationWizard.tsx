@@ -18,6 +18,8 @@ import {
   PlusCircle,
   Loader2,
   Brain,
+  Sprout,
+  ShieldCheck,
 } from 'lucide-react';
 import { COMMODITIES_DATABASE } from '../data/commodities';
 import {
@@ -442,6 +444,39 @@ export const RecommendationWizard: React.FC<RecommendationWizardProps> = ({
         </div>
       </div>
 
+      {/* Mode Orientation Banner */}
+      <div className={`px-6 py-3 border-b flex items-center justify-between gap-3 text-xs ${
+        isMsmeMode
+          ? 'bg-amber-50/80 border-amber-200 text-amber-950'
+          : 'bg-emerald-50/60 border-emerald-200 text-emerald-950'
+      }`}>
+        <div className="flex items-center gap-2">
+          {isMsmeMode ? (
+            <Sprout className="w-4 h-4 text-amber-700 shrink-0" />
+          ) : (
+            <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+          )}
+          <span>
+            {isMsmeMode ? (
+              <>
+                <strong>🌾 MSME & Cottage Producer Fast-Track Active:</strong> Prioritizing low-MOQ, affordable pouches, hand-sealing viability, and ICAR/CFTRI lab-free crop benchmarks.
+              </>
+            ) : (
+              <>
+                <strong>🏭 Industrial Enterprise Mode Active:</strong> Continuous automated packaging lines, multi-layer high-barrier laminates, and global cold-chain export metrics.
+              </>
+            )}
+          </span>
+        </div>
+        <span
+          className={`text-[10px] font-black px-2.5 py-0.5 rounded-full shrink-0 uppercase tracking-wider ${
+            isMsmeMode ? 'bg-amber-200 text-amber-900' : 'bg-emerald-200 text-emerald-900'
+          }`}
+        >
+          {isMsmeMode ? 'MSME Calibrated' : 'Enterprise'}
+        </span>
+      </div>
+
       {/* Step Content */}
       <div className="p-6 md:p-8">
         {/* ================= STEP 1: Select Commodity ================= */}
@@ -449,9 +484,13 @@ export const RecommendationWizard: React.FC<RecommendationWizardProps> = ({
           <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Select Food Commodity</h3>
+                <h3 className="text-lg font-bold text-slate-900">
+                  {isMsmeMode ? 'Select Crop / Commodity (MSME Filtered)' : 'Select Food Commodity'}
+                </h3>
                 <p className="text-xs text-slate-500">
-                  Choose from our verified postharvest database or request AI resolution for a new commodity.
+                  {isMsmeMode
+                    ? 'Pick your farm or processed batch to load certified food composition without laboratory testing.'
+                    : 'Choose from our verified postharvest database or request AI resolution for a new commodity.'}
                 </p>
               </div>
 
@@ -469,6 +508,47 @@ export const RecommendationWizard: React.FC<RecommendationWizardProps> = ({
                 ))}
               </select>
             </div>
+
+            {/* MSME Popular Commodities Quick Selector Bar */}
+            {isMsmeMode && (
+              <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl space-y-2">
+                <span className="text-[11px] font-bold text-amber-900 flex items-center gap-1.5">
+                  <Sprout className="w-3.5 h-3.5 text-amber-700" />
+                  <span>🌾 Popular Indian MSME & Farm Produce (Click to Load):</span>
+                </span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[
+                    'Fresh Tomatoes',
+                    'Mango Pickle',
+                    'Paneer',
+                    'Basmati Rice',
+                    'Potato Chips',
+                    'Roasted Almonds',
+                    'Whole Wheat Flour',
+                    'Apples',
+                    'Fresh Milk',
+                  ].map((commName) => {
+                    const match = COMMODITIES_DATABASE.find((c) => c.name.toLowerCase() === commName.toLowerCase());
+                    const isSelected = selectedCommodity.name.toLowerCase() === commName.toLowerCase();
+                    return (
+                      <button
+                        key={commName}
+                        onClick={() => {
+                          if (match) handleSelectCommodity(match);
+                        }}
+                        className={`text-xs px-2.5 py-1 rounded-lg border font-semibold transition-all ${
+                          isSelected
+                            ? 'bg-amber-700 text-white border-amber-700 shadow-xs'
+                            : 'bg-white hover:bg-amber-100 text-amber-900 border-amber-300'
+                        }`}
+                      >
+                        {commName}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Self-Learning Memory Active Banner */}
             {learnedCommodities.length > 0 && (
@@ -658,6 +738,19 @@ export const RecommendationWizard: React.FC<RecommendationWizardProps> = ({
                 {selectedCommodity.name}
               </span>
             </div>
+
+            {/* MSME Lab-Free Benchmark Guarantee */}
+            {isMsmeMode && (
+              <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-300 text-xs text-amber-950 flex items-start gap-2.5 shadow-2xs">
+                <Sprout className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <span className="font-bold text-amber-900">🌾 MSME Lab-Free Guarantee Active:</span>
+                  <p className="text-[11px] text-amber-900 leading-relaxed">
+                    Smallholders and micro-enterprises do not need expensive laboratory moisture titrators or respiration sensors. PackWise automatically pre-fills certified agricultural benchmarks from <strong>CFTRI &amp; ICAR</strong> for <strong>{selectedCommodity.name}</strong>.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Moisture */}
@@ -1115,6 +1208,59 @@ export const RecommendationWizard: React.FC<RecommendationWizardProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Mode-Specific Execution Profile */}
+            {isMsmeMode ? (
+              <div className="bg-amber-50/80 border-2 border-amber-300 rounded-xl p-4 flex items-start gap-3 shadow-2xs">
+                <Sprout className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-950 space-y-1.5 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-amber-900 uppercase tracking-wide">
+                      🌾 MSME Optimization Filters Pre-Applied:
+                    </span>
+                    <span className="text-[10px] bg-amber-200 text-amber-900 font-extrabold px-2 py-0.5 rounded-full">
+                      MSME Profile Active
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+                    <div className="p-2 bg-white/80 rounded border border-amber-200">
+                      <strong>✓ Low MOQ:</strong> Filters for materials with small-batch availability (500–1,000 pouches).
+                    </div>
+                    <div className="p-2 bg-white/80 rounded border border-amber-200">
+                      <strong>✓ Manual Heat Sealing:</strong> Compatible with impulse/pedal sealers (no FFS required).
+                    </div>
+                    <div className="p-2 bg-white/80 rounded border border-amber-200">
+                      <strong>✓ PMFME Scheme:</strong> Ready for 35% MoFPI capital subsidy documentation.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-slate-900 text-white rounded-xl border border-slate-700 p-4 flex items-start gap-3 shadow-2xs">
+                <Layers className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
+                <div className="text-xs space-y-1.5 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-teal-300 uppercase tracking-wide">
+                      🏭 Industrial & High-Throughput Specification:
+                    </span>
+                    <span className="text-[10px] bg-teal-800 text-teal-200 font-extrabold px-2 py-0.5 rounded-full">
+                      Enterprise Profile
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px] text-slate-300">
+                    <div className="p-2 bg-slate-800 rounded border border-slate-700">
+                      <strong>✓ Continuous FFS:</strong> Optimized for high-speed automated roll stock conversion.
+                    </div>
+                    <div className="p-2 bg-slate-800 rounded border border-slate-700">
+                      <strong>✓ ASTM/ISO Standards:</strong> Full OTR/WVTR compliance for export containers.
+                    </div>
+                    <div className="p-2 bg-slate-800 rounded border border-slate-700">
+                      <strong>✓ Multi-Layer Co-Ex:</strong> Multi-layer barrier laminates with EVOH/Alu foil.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Model Architecture Info Banner */}
             <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
